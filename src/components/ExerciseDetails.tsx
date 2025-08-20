@@ -171,38 +171,42 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
             </div>
           )}
 
-          {isSelected && (
+          {isSelected && (exercise.repositoryUrl || exercise.issueUrl) && (
             <div className="pt-2 border-t border-border">
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  style={{ backgroundColor: path.color }}
-                  className="text-white hover:opacity-90 transition-opacity"
-                  asChild
-                >
-                  <a 
-                    href={exercise.repositoryUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                {exercise.repositoryUrl && (
+                  <Button
+                    size="sm"
+                    style={{ backgroundColor: path.color }}
+                    className="text-white hover:opacity-90 transition-opacity"
+                    asChild
                   >
-                    <Octicons.RepoIcon size={14} className="mr-1" />
-                    Repository
-                  </a>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  asChild
-                >
-                  <a 
-                    href={exercise.issueUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                    <a 
+                      href={exercise.repositoryUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Octicons.RepoIcon size={14} className="mr-1" />
+                      Repository
+                    </a>
+                  </Button>
+                )}
+                {exercise.issueUrl && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    asChild
                   >
-                    <Octicons.IssueOpenedIcon size={14} className="mr-1" />
-                    Issue
-                  </a>
-                </Button>
+                    <a 
+                      href={exercise.issueUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Octicons.IssueOpenedIcon size={14} className="mr-1" />
+                      Issue
+                    </a>
+                  </Button>
+                )}
               </div>
             </div>
           )}
