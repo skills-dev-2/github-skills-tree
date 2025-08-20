@@ -53,15 +53,25 @@ export function calculateExerciseVisibility(
   if (searchTerm && searchTerm.trim()) {
     return matchesSearchTerm(exercise, path, searchTerm) ? 1 : 0.15;
   }
-  // If no filters are active, show everything at full visibility
+
+  // Check status filter first - this is a simple show/hide, not dimming
+  if (filters.statuses.length > 0) {
+    const statusMatches = filters.statuses.some(status => 
+      status.toLowerCase() === exercise.status.toLowerCase()
+    );
+    if (!statusMatches) {
+      return 0.25; // Hide with low visibility if status doesn't match
+    }
+  }
+
+  // Count only non-status filters for dynamic dimming calculation
   const totalActiveFilters = 
     filters.paths.length + 
     filters.products.length + 
-    filters.difficulties.length + 
-    filters.statuses.length;
+    filters.difficulties.length;
 
   if (totalActiveFilters === 0) {
-    return 1;
+    return 1; // No active non-status filters
   }
 
   const activeFilters: { category: string; values: string[]; hasMatch: boolean }[] = [];
@@ -97,23 +107,12 @@ export function calculateExerciseVisibility(
     });
   }
 
-  // Check status filter (handle capitalized filter values)
-  if (filters.statuses.length > 0) {
-    activeFilters.push({
-      category: 'status',
-      values: filters.statuses,
-      hasMatch: filters.statuses.some(status => 
-        status.toLowerCase() === exercise.status.toLowerCase()
-      )
-    });
-  }
-
-  // Calculate visibility based on matching filters
+  // Calculate visibility based on matching non-status filters
   const matchingFilters = activeFilters.filter(filter => filter.hasMatch).length;
   const totalActiveFilterCount = activeFilters.length;
 
   if (totalActiveFilterCount === 0) {
-    return 1; // No active filters
+    return 1; // No active non-status filters
   }
 
   // Calculate percentage based on matching filters
