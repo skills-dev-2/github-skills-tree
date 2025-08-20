@@ -4,6 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import * as Octicons from '@primer/octicons-react';
 import type { SkillTreeNode } from '../lib/types';
+import { useGitHubReactions } from '../hooks/use-github-reactions';
 
 interface ExerciseDetailsProps {
   node: SkillTreeNode;
@@ -16,6 +17,9 @@ interface ExerciseDetailsProps {
 export function ExerciseDetails({ node, isSelected, onClose, position, panOffset = { x: 0, y: 0 } }: ExerciseDetailsProps) {
   const { exercise, path } = node;
   const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({});
+  
+  // Fetch GitHub reactions if issue URL is available
+  const reactions = useGitHubReactions(exercise.issueUrl);
 
   // Calculate safe position that keeps popup visible
   const calculatePosition = () => {
@@ -132,6 +136,42 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
         </p>
 
         <div className="space-y-3">
+          {/* GitHub Issue Reactions */}
+          {exercise.issueUrl && (
+            <div className="border border-border rounded-lg p-3 bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-card-foreground">Community Feedback</h4>
+                {reactions.loading && (
+                  <div className="w-4 h-4 border border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                )}
+              </div>
+              
+              {reactions.error ? (
+                <p className="text-xs text-muted-foreground">
+                  {reactions.error}
+                </p>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <Octicons.ThumbsupIcon size={14} className="text-green-400" />
+                    <span className="text-sm font-medium text-card-foreground">
+                      {reactions['+1']}
+                    </span>
+                    <span className="text-xs text-muted-foreground">helpful</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5">
+                    <Octicons.ThumbsdownIcon size={14} className="text-red-400" />
+                    <span className="text-sm font-medium text-card-foreground">
+                      {reactions['-1']}
+                    </span>
+                    <span className="text-xs text-muted-foreground">needs work</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {node.dependencies.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-card-foreground mb-1">Prerequisites</h4>
