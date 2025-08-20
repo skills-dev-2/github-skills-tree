@@ -95,7 +95,13 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
   const uniqueColors = useMemo(() => {
     const colors = new Set<string>();
     nodesWithVisibility.forEach(node => {
-      colors.add(node.path.color);
+      // Add colors from dependency nodes (source of paths)
+      node.dependencies.forEach(depSlug => {
+        const depNode = nodesWithVisibility.find(n => n.exercise.slug === depSlug);
+        if (depNode) {
+          colors.add(depNode.path.color);
+        }
+      });
     });
     return Array.from(colors);
   }, [nodesWithVisibility]);
@@ -194,7 +200,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
                     key={`${depSlug}-${node.exercise.slug}`}
                     from={depNode.position}
                     to={node.position}
-                    color={node.path.color}
+                    color={depNode.path.color}
                     isHighlighted={hoveredNode?.exercise.slug === node.exercise.slug || hoveredNode?.exercise.slug === depNode.exercise.slug}
                     obstacles={obstacles}
                   />
