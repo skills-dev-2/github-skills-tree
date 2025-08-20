@@ -34,9 +34,10 @@ interface FilterSectionProps {
   items: string[];
   selectedItems: string[];
   onSelectionChange: (items: string[]) => void;
+  renderItem?: (item: string) => React.ReactNode;
 }
 
-function FilterSection({ title, items, selectedItems, onSelectionChange }: FilterSectionProps) {
+function FilterSection({ title, items, selectedItems, onSelectionChange, renderItem }: FilterSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const handleItemToggle = (item: string, checked: boolean) => {
@@ -110,10 +111,10 @@ function FilterSection({ title, items, selectedItems, onSelectionChange }: Filte
                 />
                 <label
                   htmlFor={`${title}-${item}`}
-                  className="text-sm text-foreground cursor-pointer flex-1 truncate"
+                  className="text-sm text-foreground cursor-pointer flex-1 truncate flex items-center gap-2"
                   title={item}
                 >
-                  {item}
+                  {renderItem ? renderItem(item) : item}
                 </label>
               </div>
             ))}
@@ -167,6 +168,30 @@ export function FilterBar({
       statuses: capitalizedStatuses
     };
   }, [exercises, paths]);
+
+  // Create a map of path names to colors for easy lookup
+  const pathColorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    paths.forEach(path => {
+      map.set(path.name, path.color);
+    });
+    return map;
+  }, [paths]);
+
+  const renderPathItem = (pathName: string) => {
+    const color = pathColorMap.get(pathName);
+    return (
+      <>
+        {color && (
+          <div 
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: color }}
+          />
+        )}
+        <span className="truncate">{pathName}</span>
+      </>
+    );
+  };
 
   const totalActiveFilters = 
     filters.paths.length + 
@@ -239,6 +264,7 @@ export function FilterBar({
           items={filterOptions.paths}
           selectedItems={filters.paths}
           onSelectionChange={(paths) => onFiltersChange({ ...filters, paths })}
+          renderItem={renderPathItem}
         />
         
         <FilterSection
