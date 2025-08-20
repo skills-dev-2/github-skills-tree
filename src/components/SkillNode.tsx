@@ -14,9 +14,22 @@ interface SkillNodeProps {
   visibility?: number; // 0 = fully dimmed, 1 = fully visible
 }
 
+// Helper function to normalize icon names
+function normalizeIconName(iconName: string): string {
+  // Convert kebab-case to camelCase for some common patterns
+  const normalized = iconName
+    .toLowerCase()
+    .replace(/[_\s]+/g, '-') // normalize underscores and spaces to dashes
+    .trim();
+    
+  return normalized;
+}
+
 // Map exercise icons to Octicon components with fallbacks
 const iconMap: Record<string, React.ComponentType<any>> = {
+  // Basic GitHub icons
   'mark-github': Octicons.MarkGithubIcon,
+  'github-mark': Octicons.MarkGithubIcon,
   'git-branch': Octicons.GitBranchIcon,
   'markdown': Octicons.MarkdownIcon,
   'browser': Octicons.BrowserIcon,
@@ -62,6 +75,86 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   'accessibility': Octicons.AccessibilityIcon,
   'checklist': Octicons.ChecklistIcon,
   'sync': Octicons.SyncIcon,
+  
+  // Security and scanning related icons - using available alternatives
+  'codescan-checkmark': Octicons.ShieldCheckIcon,
+  'codescan': Octicons.ShieldIcon,
+  'security': Octicons.ShieldIcon,
+  'vulnerability': Octicons.AlertIcon,
+  'alert': Octicons.AlertIcon,
+  'bug': Octicons.BugIcon,
+  
+  // Actions and automation - using available alternatives
+  'actions': Octicons.PlayIcon,
+  'play': Octicons.PlayIcon,
+  'stop': Octicons.StopIcon,
+  'calendar': Octicons.CalendarIcon,
+  'clock': Octicons.ClockIcon,
+  
+  // Repository and version control
+  'repo': Octicons.RepoIcon,
+  'git-commit': Octicons.GitCommitIcon,
+  'versions': Octicons.VersionsIcon,
+  'history': Octicons.HistoryIcon,
+  
+  // Development tools
+  'tools': Octicons.ToolsIcon,
+  'database': Octicons.DatabaseIcon,
+  'server': Octicons.ServerIcon,
+  'desktop-download': Octicons.DesktopDownloadIcon,
+  'cloud': Octicons.CloudIcon,
+  
+  // Communication and collaboration
+  'comment': Octicons.CommentIcon,
+  'mail': Octicons.MailIcon,
+  'mention': Octicons.MentionIcon,
+  'link': Octicons.LinkIcon,
+  'share': Octicons.ShareIcon,
+  
+  // Files and documentation
+  'file': Octicons.FileIcon,
+  'file-code': Octicons.FileCodeIcon,
+  'file-media': Octicons.FileMediaIcon,
+  'file-binary': Octicons.FileBinaryIcon,
+  'archive': Octicons.ArchiveIcon,
+  
+  // Additional common icons
+  'star': Octicons.StarIcon,
+  'download': Octicons.DownloadIcon,
+  'upload': Octicons.UploadIcon,
+  'fold': Octicons.FoldIcon,
+  'unfold': Octicons.UnfoldIcon,
+  'info': Octicons.InfoIcon,
+  'question': Octicons.QuestionIcon,
+  'x': Octicons.XIcon,
+  'plus': Octicons.PlusIcon,
+  'dash': Octicons.DashIcon,
+  'pencil': Octicons.PencilIcon,
+  'trash': Octicons.TrashIcon,
+  
+  // Code quality and review icons
+  'code-review': Octicons.EyeIcon,
+  'codereview': Octicons.EyeIcon,
+  'review': Octicons.EyeIcon,
+  'pull-request': Octicons.GitPullRequestIcon,
+  'pr': Octicons.GitPullRequestIcon,
+  'merge': Octicons.GitMergeIcon,
+  'commit': Octicons.GitCommitIcon,
+  
+  // Project management
+  'milestone': Octicons.CalendarIcon, // Using calendar as milestone alternative
+  'project-template': Octicons.RepoTemplateIcon,
+  'template': Octicons.RepoTemplateIcon,
+  'discussion': Octicons.CommentDiscussionIcon,
+  'discussions': Octicons.CommentDiscussionIcon,
+  
+  // Learning and documentation
+  'book-open': Octicons.BookIcon,
+  'documentation': Octicons.BookIcon,
+  'docs': Octicons.BookIcon,
+  'tutorial': Octicons.BookIcon,
+  'learning': Octicons.BookIcon,
+  'guide': Octicons.BookIcon,
 };
 
 export function SkillNode({ 
@@ -83,7 +176,16 @@ export function SkillNode({
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   
   // Get the appropriate icon component with fallback
-  const IconComponent = iconMap[exercise.icon] || Octicons.MarkGithubIcon;
+  const normalizedIcon = normalizeIconName(exercise.icon);
+  const IconComponent = iconMap[normalizedIcon];
+  
+  // Log warning when icon is not found - more detailed info for debugging
+  if (!IconComponent) {
+    console.warn(`Icon "${exercise.icon}" (normalized: "${normalizedIcon}") not found for exercise "${exercise.name}". Available icons include: codescan-checkmark, shield-check, etc. Using fallback github icon.`);
+  }
+  
+  // Use fallback icon if not found
+  const FinalIconComponent = IconComponent || Octicons.MarkGithubIcon;
   
   // Use only filter-based visibility (no automatic status dimming)
   const finalOpacity = visibility;
@@ -182,7 +284,7 @@ export function SkillNode({
         height={32}
       >
         <div className="flex items-center justify-center w-full h-full">
-          <IconComponent
+          <FinalIconComponent
             size={24}
             style={{ color: path.color }}
           />
