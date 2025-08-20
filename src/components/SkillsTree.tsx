@@ -6,6 +6,7 @@ import { FilterBar, type FilterState } from './FilterBar';
 import { SearchBar } from './SearchBar';
 import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
+import { nodesToObstacles } from '../lib/path-routing';
 import type { SkillTreeNode } from '../lib/types';
 
 interface SkillsTreeProps {
@@ -182,6 +183,12 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
                 const depNode = nodesWithVisibility.find(n => n.exercise.slug === depSlug);
                 if (!depNode) return null;
                 
+                // Generate obstacles for this path (exclude source and target nodes)
+                const obstacles = nodesToObstacles(
+                  nodesWithVisibility, 
+                  [depSlug, node.exercise.slug]
+                );
+                
                 return (
                   <SkillPath
                     key={`${depSlug}-${node.exercise.slug}`}
@@ -189,6 +196,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
                     to={node.position}
                     color={node.path.color}
                     isHighlighted={hoveredNode?.exercise.slug === node.exercise.slug || hoveredNode?.exercise.slug === depNode.exercise.slug}
+                    obstacles={obstacles}
                   />
                 );
               });

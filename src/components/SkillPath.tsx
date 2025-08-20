@@ -1,33 +1,28 @@
 import React from 'react';
+import { calculateAvoidancePath, type Point, type ObstacleNode } from '../lib/path-routing';
 
 interface SkillPathProps {
   from: { x: number; y: number };
   to: { x: number; y: number };
   color: string;
   isHighlighted: boolean;
+  obstacles?: ObstacleNode[];
 }
 
-export function SkillPath({ from, to, color, isHighlighted }: SkillPathProps) {
-  // Create path using only vertical and horizontal lines, connecting from bottom of 'from' node to top of 'to' node
-  const createPath = (start: { x: number; y: number }, end: { x: number; y: number }) => {
-    // Start from bottom of the source node (add 30px offset for node radius)
-    const startPoint = { x: start.x, y: start.y + 30 };
-    // End at top of the target node (subtract 30px offset for node radius)
-    const endPoint = { x: end.x, y: end.y - 30 };
+export function SkillPath({ from, to, color, isHighlighted, obstacles = [] }: SkillPathProps) {
+  // Calculate path that avoids obstacles
+  const createPath = (start: Point, end: Point) => {
+    const pathPoints = calculateAvoidancePath(start, end, obstacles);
     
-    const dx = endPoint.x - startPoint.x;
-    const dy = endPoint.y - startPoint.y;
+    // Convert points to SVG path string
+    if (pathPoints.length === 0) return '';
     
-    // Always use vertical then horizontal for top-down flow
-    if (dy > 0) {
-      // Moving downward - go down then across
-      const midY = startPoint.y + dy * 0.6;
-      return `M ${startPoint.x} ${startPoint.y} L ${startPoint.x} ${midY} L ${endPoint.x} ${midY} L ${endPoint.x} ${endPoint.y}`;
-    } else {
-      // Moving upward - go across then down
-      const midX = startPoint.x + dx * 0.5;
-      return `M ${startPoint.x} ${startPoint.y} L ${midX} ${startPoint.y} L ${midX} ${endPoint.y} L ${endPoint.x} ${endPoint.y}`;
+    let pathData = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+    for (let i = 1; i < pathPoints.length; i++) {
+      pathData += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
     }
+    
+    return pathData;
   };
 
   const pathData = createPath(from, to);
