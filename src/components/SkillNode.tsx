@@ -77,7 +77,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   'sync': Octicons.SyncIcon,
   
   // Security and scanning related icons - using available alternatives
-  'codescan-checkmark': Octicons.ShieldCheckIcon,
+  'codescan-checkmark': Octicons.CodescanCheckmarkIcon,
   'codescan': Octicons.ShieldIcon,
   'security': Octicons.ShieldIcon,
   'vulnerability': Octicons.AlertIcon,
