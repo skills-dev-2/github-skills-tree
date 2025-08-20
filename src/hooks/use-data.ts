@@ -39,6 +39,7 @@ async function fetchAllExercisesRecursively(basePath: string = 'exercises'): Pro
       
       for (const file of files) {
         if (file.type === 'file' && file.name.endsWith('.json') && file.download_url) {
+          console.log(`Found exercise file: ${file.download_url}`);
           allExercises.push(file);
         } else if (file.type === 'dir') {
           // Recursively process subdirectories
