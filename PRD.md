@@ -1,84 +1,85 @@
-# GitHub Skills Tree - Product Requirements Document
+# GitHub Skills Exercise Roadmap PRD
 
-A visual skill progression system that gamifies learning GitHub features and development practices.
+A beautiful minimalistic skills tree visualization for GitHub Skills platform exercises, showing learning paths and dependencies in an interactive, game-like interface.
 
-**Experience Qualities**:
-1. **Engaging** - Make learning GitHub feel like a game with clear progression and achievements
-2. **Educational** - Provide meaningful learning paths that build real development skills
-3. **Motivating** - Create a sense of accomplishment through visual skill tree progression
+**Experience Qualities**: 
+1. **Intuitive** - Navigation feels natural and discoverable like exploring a skill tree in a video game
+2. **Focused** - Clean interface that emphasizes the learning path relationships without visual clutter
+3. **Engaging** - Interactive elements that encourage exploration and provide clear progression feedback
 
 **Complexity Level**: Light Application (multiple features with basic state)
-- The app will track skill progression, display visual skill trees, and manage user achievements with persistent state
+- Multiple interactive components with hover states, click interactions, and data visualization while maintaining simplicity in core functionality
 
 ## Essential Features
 
-### Skill Tree Visualization
-- **Functionality**: Interactive skill tree displaying GitHub-related skills with dependencies
-- **Purpose**: Provides clear learning path and visual progress tracking
-- **Trigger**: User opens the application
-- **Progression**: View tree → Select skill → See requirements → Mark as learned → Unlock dependencies
-- **Success criteria**: Users can navigate skill tree and understand learning progression
+### Interactive Skills Tree
+- **Functionality**: Displays exercises as circular nodes connected by paths showing dependencies
+- **Purpose**: Visualizes learning progression and relationships between GitHub skills
+- **Trigger**: Page load automatically renders the tree
+- **Progression**: View tree → Hover for details → Click for full exercise information → Navigate through dependencies
+- **Success criteria**: All 50 exercises visible with clear path connections, smooth interactions
 
-### Progress Tracking
-- **Functionality**: Track completed skills and calculate overall progress
-- **Purpose**: Maintain motivation and show learning achievements
-- **Trigger**: User marks skills as completed
-- **Progression**: Complete skill → Update progress → Save state → Show visual feedback
-- **Success criteria**: Progress persists between sessions and accurately reflects completed skills
+### Exercise Details Panel
+- **Functionality**: Shows detailed information when hovering/clicking exercise nodes
+- **Purpose**: Provides comprehensive exercise information without cluttering the main view
+- **Trigger**: Mouse hover or click on exercise node
+- **Progression**: Hover node → Panel appears with details → Click to pin panel → Close to return to tree
+- **Success criteria**: Details load instantly, panel positioning doesn't obstruct tree navigation
 
-### Skill Details
-- **Functionality**: Detailed information about each skill including resources and requirements
-- **Purpose**: Provide learning guidance and prerequisites for each skill
-- **Trigger**: User clicks on a skill node
-- **Progression**: Click skill → Show modal/panel → Display info → Access resources → Close details
-- **Success criteria**: Users can access comprehensive information about each skill
+### Path Visualization System
+- **Functionality**: Draws connecting lines between related exercises using different colors per learning path
+- **Purpose**: Shows learning dependencies and recommended progression routes
+- **Trigger**: Renders automatically with tree, highlights on hover
+- **Progression**: View connections → Hover path for emphasis → Follow path to see learning sequence
+- **Success criteria**: Lines are clean (vertical/horizontal only), colors match path definitions, no visual overlaps
+
+### Status Indicator System
+- **Functionality**: Uses icon opacity and visual cues to show exercise status (active, scheduled, tentative)
+- **Purpose**: Communicates availability and development progress of exercises
+- **Trigger**: Visual state rendered with each node
+- **Progression**: Observe status → Understand availability → Plan learning path accordingly
+- **Success criteria**: Status clearly distinguishable, consistent visual language across all nodes
 
 ## Edge Case Handling
-
-- **Empty Progress**: Show welcome message and highlight starting skills
-- **All Skills Complete**: Display congratulations and suggest advanced topics
-- **Broken Dependencies**: Validate skill prerequisites and prevent invalid progression
-- **Data Loss**: Gracefully handle missing progress data with recovery options
+- **Empty Data States**: Graceful fallback when exercise or path files are missing with helpful messages
+- **Responsive Scaling**: Tree adapts to different screen sizes while maintaining readability
+- **Performance with Large Datasets**: Efficient rendering when exercise count grows beyond 50 items
+- **Complex Dependencies**: Clear visual handling when exercises have multiple prerequisites
+- **Overlapping Paths**: Smart routing to prevent connection lines from becoming confusing
 
 ## Design Direction
-
-The design should feel modern and gamified with a tech-forward aesthetic that emphasizes progression and achievement while maintaining professional credibility for a developer tool.
+The design should evoke the focused intensity of a skill tree from a modern RPG - dark themed with precise geometric connections, clean typography, and satisfying interactive feedback that makes learning feel like progression.
 
 ## Color Selection
-
-Triadic color scheme using GitHub's brand colors as foundation with complementary gaming elements.
-
-- **Primary Color**: GitHub Black (oklch(0.2 0 0)) - Communicates professionalism and GitHub brand connection
-- **Secondary Colors**: Dark gray backgrounds and subtle borders for depth and hierarchy
-- **Accent Color**: GitHub Green (oklch(0.6 0.15 142)) - Highlights completed skills and achievements
-- **Foreground/Background Pairings**:
-  - Background (White oklch(1 0 0)): Dark text (oklch(0.2 0 0)) - Ratio 12.6:1 ✓
-  - Primary (GitHub Black oklch(0.2 0 0)): White text (oklch(1 0 0)) - Ratio 12.6:1 ✓
-  - Accent (GitHub Green oklch(0.6 0.15 142)): White text (oklch(1 0 0)) - Ratio 4.2:1 ✓
+Custom palette with GitHub-inspired dark theme colors
+- **Primary Color**: GitHub Blue (#0969da) - communicates trust and represents the core GitHub brand
+- **Secondary Colors**: Deep grays (#21262d, #161b22) for backgrounds and subtle UI elements  
+- **Accent Color**: Success Green (#2ea043) for completed/active states and call-to-action highlights
+- **Foreground/Background Pairings**: 
+  - Background (#0d1117): Light Gray Text (#f0f6fc) - Ratio 15.2:1 ✓
+  - Card (#21262d): Light Gray Text (#f0f6fc) - Ratio 12.8:1 ✓  
+  - Primary (#0969da): White Text (#ffffff) - Ratio 5.9:1 ✓
+  - Accent (#2ea043): White Text (#ffffff) - Ratio 4.8:1 ✓
 
 ## Font Selection
+Typography should feel technical yet approachable, emphasizing clarity and hierarchy for scanning information quickly.
 
-Clean, modern typeface that balances readability with technical aesthetic - using Inter for its excellent screen readability and developer tool familiarity.
-
-- **Typographic Hierarchy**:
-  - H1 (App Title): Inter Bold/32px/tight letter spacing
-  - H2 (Section Headers): Inter Semibold/24px/normal spacing  
-  - H3 (Skill Names): Inter Medium/18px/normal spacing
-  - Body (Descriptions): Inter Regular/16px/relaxed line height
-  - Small (Meta info): Inter Regular/14px/normal spacing
+- **Typographic Hierarchy**: 
+  - H1 (Page Title): SF Pro Display Semi-Bold/32px/tight letter spacing
+  - H2 (Section Headers): SF Pro Display Medium/24px/normal spacing
+  - Body (Exercise Names): SF Pro Text Regular/16px/comfortable line height
+  - Caption (Status Info): SF Pro Text Regular/14px/muted color
 
 ## Animations
+Subtle, purposeful animations that guide attention and provide satisfying feedback without being distracting or slowing down interaction.
 
-Subtle and purposeful animations that enhance the gamification feeling without being distracting, focusing on skill unlocking and progress feedback.
-
-- **Purposeful Meaning**: Skill unlock animations and progress bars create satisfaction and communicate achievement
-- **Hierarchy of Movement**: Skill completion gets primary animation focus, navigation transitions are secondary
+- **Purposeful Meaning**: Hover states expand nodes slightly to show interactivity, path lines glow when highlighted to emphasize connections
+- **Hierarchy of Movement**: Node interactions take priority, followed by path highlighting, with panel transitions being most subtle
 
 ## Component Selection
-
-- **Components**: Card (skill nodes), Dialog (skill details), Progress (completion tracking), Button (actions), Badge (skill status)
-- **Customizations**: Custom skill tree layout component with connecting lines, animated progress indicators
-- **States**: Locked/unlocked skills, completed/incomplete status, hover effects for interactive elements
-- **Icon Selection**: GitHub icons for skills, lock/unlock icons for status, progress indicators for completion
-- **Spacing**: Consistent 4-unit (16px) spacing between major elements, 2-unit (8px) for related items
-- **Mobile**: Collapsible skill tree with touch-friendly navigation, responsive modal dialogs for skill details
+- **Components**: Card for exercise details panel, Button for navigation, Tooltip for quick info, ScrollArea for tree container
+- **Customizations**: Custom SVG skill tree visualization, specialized connection line rendering system
+- **States**: Nodes have distinct hover/active/dimmed states, paths highlight on interaction, panels slide in smoothly
+- **Icon Selection**: GitHub Octicons for exercise types, geometric shapes for nodes, clean directional indicators for paths
+- **Spacing**: 16px base unit, 24px for major sections, 8px for tight groupings
+- **Mobile**: Simplified tree layout with touch-friendly interactions, collapsible detail panels, horizontal scrolling for wide trees
