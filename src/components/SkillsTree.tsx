@@ -2,11 +2,12 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { SkillNode } from './SkillNode';
 import { SkillPath } from './SkillPath';
 import { ExerciseDetails } from './ExerciseDetails';
-import { FilterBar, type FilterState } from './FilterBar';
+import { FilterBar, type FilterState, type SettingsState } from './FilterBar';
 import { SearchBar } from './SearchBar';
 import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
 import { nodesToObstacles } from '../lib/path-routing';
+import { useKV } from '@github/spark/hooks';
 import type { SkillTreeNode } from '../lib/types';
 
 interface SkillsTreeProps {
@@ -23,7 +24,13 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     difficulties: [],
     statuses: []
   });
+  const [settings, setSettings] = useState<SettingsState>({
+    isDragModeEnabled: false
+  });
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Store custom node positions in persistent storage
+  const [customPositions, setCustomPositions] = useKV("node-positions", {});
 
   // Pan state for drag-to-move functionality
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -32,36 +39,115 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const skillTreeNodes = useMemo(() => 
-    createSkillTreeData(exercises, paths), 
-    [exercises, paths]
-  );
+  const skillTreeNodes = useMemo(() => {
+    const nodes = createSkillTreeData(exercises, paths);
+    return nodes;
+  }, [exercises, paths]);
+
+  // Store original positions when skill tree nodes are first created
+  const originalPositions = useMemo(() => {
+    const positions: Record<string, { x: number; y: number }> = {};
+    skillTreeNodes.forEach(node => {
+      positions[node.exercise.slug] = { ...node.position };
+    });
+    return positions;
+  }, [skillTreeNodes]);
+
+  // Apply custom positions to nodes when in drag mode
+  const nodesWithCustomPositions = useMemo(() => {
+    return skillTreeNodes.map(node => {
+      const customPos = customPositions[node.exercise.slug];
+      if (customPos && settings.isDragModeEnabled) {
+        return { ...node, position: customPos };
+      }
+      return node;
+    });
+  }, [skillTreeNodes, customPositions, settings.isDragModeEnabled]);
 
   // Apply visibility based on filters and search
   const nodesWithVisibility = useMemo(() => 
-    applyVisibilityToNodes(skillTreeNodes, filters, searchTerm),
-    [skillTreeNodes, filters, searchTerm]
+    applyVisibilityToNodes(nodesWithCustomPositions, filters, searchTerm),
+    [nodesWithCustomPositions, filters, searchTerm]
   );
 
   const handleNodeClick = (node: SkillTreeNode) => {
-    setSelectedNode(node === selectedNode ? null : node);
+    // Only allow node selection/details when not in drag mode
+    if (!settings.isDragModeEnabled) {
+      setSelectedNode(node === selectedNode ? null : node);
+    }
   };
+
+  const handleSettingsChange = (newSettings: SettingsState) => {
+    setSettings(newSettings);
+    
+    // If drag mode is disabled, reset positions to original
+    if (!newSettings.isDragModeEnabled) {
+      setCustomPositions({});
+      setSelectedNode(null); // Clear any selected node
+    }
+  };
+
+  const handleNodeDrag = useCallback((nodeSlug: string, newPosition: { x: number; y: number }) => {
+    if (!settings.isDragModeEnabled) return;
+    
+    // Find the dragged node
+    const draggedNode = nodesWithVisibility.find(n => n.exercise.slug === nodeSlug);
+    if (!draggedNode) return;
+    
+    // Calculate the offset from the original position
+    const originalPos = originalPositions[nodeSlug] || draggedNode.position;
+    const offset = {
+      x: newPosition.x - originalPos.x,
+      y: newPosition.y - originalPos.y
+    };
+    
+    // Find all dependent nodes (nodes that depend on this one directly)
+    const dependentNodes = nodesWithVisibility.filter(node => 
+      node.dependencies.includes(nodeSlug)
+    );
+    
+    // Update positions for the dragged node and all its dependents
+    const newPositions: Record<string, { x: number; y: number }> = {};
+    
+    // Update the dragged node position
+    newPositions[nodeSlug] = newPosition;
+    
+    // Update dependent node positions with the same offset
+    dependentNodes.forEach(depNode => {
+      const depOriginalPos = originalPositions[depNode.exercise.slug] || depNode.position;
+      newPositions[depNode.exercise.slug] = {
+        x: depOriginalPos.x + offset.x,
+        y: depOriginalPos.y + offset.y
+      };
+    });
+    
+    // Update state with new positions
+    setCustomPositions((current) => ({ ...current, ...newPositions }));
+    
+    // Log position to console
+    console.log(`Node ${draggedNode.exercise.name} moved to relative position:`, {
+      x: newPosition.x - originalPos.x,
+      y: newPosition.y - originalPos.y,
+      dependentsMovedCount: dependentNodes.length
+    });
+  }, [settings.isDragModeEnabled, nodesWithVisibility, originalPositions]);
 
   const handleNodeHover = (node: SkillTreeNode | null) => {
     setHoveredNode(node);
   };
 
-  // Pan/drag functionality
+  // Pan/drag functionality - only enabled when drag mode is disabled
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Only start dragging if clicking on SVG background, not on nodes or other elements
+    // AND drag mode is disabled
     const target = e.target as Element;
-    if (target.tagName === 'svg' || target.classList.contains('svg-background')) {
+    if (!settings.isDragModeEnabled && (target.tagName === 'svg' || target.classList.contains('svg-background'))) {
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
       setPanStart({ x: panOffset.x, y: panOffset.y });
       e.preventDefault();
     }
-  }, [panOffset]);
+  }, [panOffset, settings.isDragModeEnabled]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isDragging) {
@@ -114,6 +200,8 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         paths={paths}
         filters={filters}
         onFiltersChange={setFilters}
+        settings={settings}
+        onSettingsChange={handleSettingsChange}
       />
 
       {/* Search Bar - centered on the page with left margin for filter bar */}
@@ -131,9 +219,9 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
       {/* Main content area with left margin for filter bar and top margin for search */}
       <div 
         ref={containerRef}
-        className="h-full cursor-grab active:cursor-grabbing ml-64"
+        className="h-full ml-64"
         style={{ 
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: settings.isDragModeEnabled ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           paddingTop: '159px' // Space for header + search bar
         }}
         onMouseMove={handleMouseMove}
@@ -218,16 +306,18 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
                 isSelected={selectedNode?.exercise.slug === node.exercise.slug}
                 isHighlighted={hoveredNode?.exercise.slug === node.exercise.slug}
                 visibility={node.visibility}
+                isDragModeEnabled={settings.isDragModeEnabled}
                 onClick={() => handleNodeClick(node)}
                 onMouseEnter={() => handleNodeHover(node)}
                 onMouseLeave={() => handleNodeHover(null)}
+                onDrag={handleNodeDrag}
               />
             ))}
           </g>
         </svg>
 
-        {/* Exercise details panel */}
-        {(selectedNode || hoveredNode) && (
+        {/* Exercise details panel - only show when not in drag mode */}
+        {!settings.isDragModeEnabled && (selectedNode || hoveredNode) && (
           <ExerciseDetails
             node={selectedNode || hoveredNode!}
             isSelected={!!selectedNode}
