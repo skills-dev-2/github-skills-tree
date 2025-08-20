@@ -179,7 +179,7 @@ export function FilterBar({
       paths: [],
       products: [],
       difficulties: [],
-      statuses: []
+      statuses: ['Active']
     });
   };
 

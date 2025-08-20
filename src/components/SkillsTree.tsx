@@ -22,7 +22,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     paths: [],
     products: [],
     difficulties: [],
-    statuses: []
+    statuses: ['Active']
   });
   const [settings, setSettings] = useState<SettingsState>({
     isDragModeEnabled: false
