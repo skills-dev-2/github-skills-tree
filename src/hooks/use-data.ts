@@ -30,6 +30,56 @@ async function fetchFileContent(downloadUrl: string) {
   return response.json();
 }
 
+async function fetchAllExercisesRecursively(basePath: string = 'exercises'): Promise<GitHubFile[]> {
+  const allExercises: GitHubFile[] = [];
+  
+  async function processDirectory(path: string) {
+    try {
+      const files = await fetchGitHubFiles(path);
+      
+      for (const file of files) {
+        if (file.type === 'file' && file.name.endsWith('.json') && file.download_url) {
+          allExercises.push(file);
+        } else if (file.type === 'dir') {
+          // Recursively process subdirectories
+          await processDirectory(`${path}/${file.name}`);
+        }
+      }
+    } catch (err) {
+      // Log the error but continue processing other directories
+      console.warn(`Failed to process directory ${path}:`, err);
+    }
+  }
+  
+  await processDirectory(basePath);
+  return allExercises;
+}
+
+async function fetchAllPathsRecursively(basePath: string = 'paths'): Promise<GitHubFile[]> {
+  const allPaths: GitHubFile[] = [];
+  
+  async function processDirectory(path: string) {
+    try {
+      const files = await fetchGitHubFiles(path);
+      
+      for (const file of files) {
+        if (file.type === 'file' && file.name.endsWith('.json') && file.download_url) {
+          allPaths.push(file);
+        } else if (file.type === 'dir') {
+          // Recursively process subdirectories
+          await processDirectory(`${path}/${file.name}`);
+        }
+      }
+    } catch (err) {
+      // Log the error but continue processing other directories
+      console.warn(`Failed to process directory ${path}:`, err);
+    }
+  }
+  
+  await processDirectory(basePath);
+  return allPaths;
+}
+
 export function useExercises() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,13 +88,8 @@ export function useExercises() {
   useEffect(() => {
     async function loadExercises() {
       try {
-        // Get list of exercise files from GitHub
-        const files = await fetchGitHubFiles('exercises');
-        const jsonFiles = files.filter(file => 
-          file.type === 'file' && 
-          file.name.endsWith('.json') && 
-          file.download_url
-        );
+        // Recursively get all exercise files from GitHub (including subfolders)
+        const jsonFiles = await fetchAllExercisesRecursively('exercises');
 
         // Fetch content of each exercise file
         const exercisePromises = jsonFiles.map(async (file) => {
@@ -75,13 +120,8 @@ export function usePaths() {
   useEffect(() => {
     async function loadPaths() {
       try {
-        // Get list of path files from GitHub
-        const files = await fetchGitHubFiles('paths');
-        const jsonFiles = files.filter(file => 
-          file.type === 'file' && 
-          file.name.endsWith('.json') && 
-          file.download_url
-        );
+        // Recursively get all path files from GitHub (including subfolders)
+        const jsonFiles = await fetchAllPathsRecursively('paths');
 
         // Fetch content of each path file
         const pathPromises = jsonFiles.map(async (file) => {
