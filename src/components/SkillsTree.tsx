@@ -134,10 +134,11 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     
     // Update dependent node positions with the same offset
     dependentNodes.forEach(depNode => {
-      const depOriginalPos = originalPositions[depNode.exercise.slug] || depNode.position;
+      // Use current position (which includes any custom positions) instead of original position
+      const depCurrentPos = depNode.position;
       newPositions[depNode.exercise.slug] = {
-        x: depOriginalPos.x + offset.x,
-        y: depOriginalPos.y + offset.y
+        x: depCurrentPos.x + offset.x,
+        y: depCurrentPos.y + offset.y
       };
     });
     
