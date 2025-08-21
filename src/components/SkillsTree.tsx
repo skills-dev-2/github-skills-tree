@@ -202,19 +202,23 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     return { width: Math.max(maxX, 1400), height: Math.max(maxY, 1200) };
   }, [nodesWithVisibility]);
 
-  // Get unique colors for marker definitions
-  const uniqueColors = useMemo(() => {
-    const colors = new Set<string>();
+  // Get unique color-visibility combinations for marker definitions
+  const uniqueMarkers = useMemo(() => {
+    const markers = new Map<string, { color: string; visibility: number }>();
     nodesWithVisibility.forEach(node => {
-      // Add colors from dependency nodes (source of paths)
+      // Add markers for dependency nodes (source of paths)
       node.dependencies.forEach(depSlug => {
         const depNode = nodesWithVisibility.find(n => n.exercise.slug === depSlug);
         if (depNode) {
-          colors.add(depNode.path.color);
+          const key = `${depNode.path.color}-${Math.round(node.visibility * 100)}`;
+          markers.set(key, { 
+            color: depNode.path.color, 
+            visibility: node.visibility 
+          });
         }
       });
     });
-    return Array.from(colors);
+    return Array.from(markers.entries()).map(([key, value]) => ({ key, ...value }));
   }, [nodesWithVisibility]);
 
   return (
@@ -272,27 +276,31 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
             fill="transparent"
             className="svg-background"
           />
-          {/* Define arrow markers for all path colors */}
+          {/* Define arrow markers for all path color-visibility combinations */}
           <defs>
-            {uniqueColors.map(color => (
-              <marker
-                key={`arrow-${color.replace('#', '')}`}
-                id={`arrow-${color.replace('#', '')}`}
-                viewBox="0 0 10 10"
-                refX="9"
-                refY="3"
-                markerUnits="strokeWidth"
-                markerWidth="4"
-                markerHeight="3"
-                orient="auto"
-              >
-                <path
-                  d="M0,0 L0,6 L9,3 z"
-                  fill={color}
-                  opacity={0.6}
-                />
-              </marker>
-            ))}
+            {uniqueMarkers.map(({ key, color, visibility }) => {
+              const baseOpacity = 0.6;
+              const markerOpacity = baseOpacity * visibility;
+              return (
+                <marker
+                  key={key}
+                  id={`arrow-${color.replace('#', '')}-${Math.round(visibility * 100)}`}
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="3"
+                  markerUnits="strokeWidth"
+                  markerWidth="4"
+                  markerHeight="3"
+                  orient="auto"
+                >
+                  <path
+                    d="M0,0 L0,6 L9,3 z"
+                    fill={color}
+                    opacity={markerOpacity}
+                  />
+                </marker>
+              );
+            })}
           </defs>
 
           {/* Render skill paths */}
@@ -316,6 +324,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
                     color={depNode.path.color}
                     isHighlighted={hoveredNode?.exercise.slug === node.exercise.slug || hoveredNode?.exercise.slug === depNode.exercise.slug}
                     obstacles={obstacles}
+                    targetVisibility={node.visibility}
                   />
                 );
               });

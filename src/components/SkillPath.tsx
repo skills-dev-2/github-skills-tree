@@ -7,9 +7,10 @@ interface SkillPathProps {
   color: string;
   isHighlighted: boolean;
   obstacles?: ObstacleNode[];
+  targetVisibility?: number; // Visibility of the target node this line points to
 }
 
-export function SkillPath({ from, to, color, isHighlighted, obstacles = [] }: SkillPathProps) {
+export function SkillPath({ from, to, color, isHighlighted, obstacles = [], targetVisibility = 1 }: SkillPathProps) {
   // Calculate path that avoids obstacles
   const createPath = (start: Point, end: Point) => {
     const pathPoints = calculateAvoidancePath(start, end, obstacles);
@@ -27,7 +28,9 @@ export function SkillPath({ from, to, color, isHighlighted, obstacles = [] }: Sk
 
   const pathData = createPath(from, to);
   const strokeWidth = isHighlighted ? 3 : 2;
-  const opacity = isHighlighted ? 0.9 : 0.6;
+  // Use target node's visibility to determine line opacity
+  const baseOpacity = isHighlighted ? 0.9 : 0.6;
+  const opacity = baseOpacity * targetVisibility;
 
   return (
     <g className="skill-path">
@@ -38,7 +41,7 @@ export function SkillPath({ from, to, color, isHighlighted, obstacles = [] }: Sk
           stroke={color}
           strokeWidth={strokeWidth + 4}
           fill="none"
-          opacity={0.3}
+          opacity={0.3 * targetVisibility}
           style={{
             filter: `blur(2px)`
           }}
@@ -54,7 +57,7 @@ export function SkillPath({ from, to, color, isHighlighted, obstacles = [] }: Sk
         opacity={opacity}
         strokeLinecap="round"
         strokeLinejoin="round"
-        markerEnd={`url(#arrow-${color.replace('#', '')})`}
+        markerEnd={`url(#arrow-${color.replace('#', '')}-${Math.round(targetVisibility * 100)})`}
         style={{
           transition: 'all 0.3s ease',
         }}
