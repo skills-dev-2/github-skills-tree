@@ -37,8 +37,55 @@ interface FilterSectionProps {
   renderItem?: (item: string) => React.ReactNode;
 }
 
+interface SettingsSectionProps {
+  settings: SettingsState;
+  onSettingsChange: (settings: SettingsState) => void;
+}
+
+function SettingsSection({ settings, onSettingsChange }: SettingsSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <>
+      <div 
+        className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span className="font-medium text-sm text-foreground">Settings</span>
+        {isExpanded ? (
+          <ChevronDownIcon size={16} className="text-muted-foreground" />
+        ) : (
+          <ChevronRightIcon size={16} className="text-muted-foreground" />
+        )}
+      </div>
+
+      {isExpanded && (
+        <div className="px-3 pb-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="drag-mode" className="text-sm text-foreground cursor-pointer">
+              Enable node dragging
+            </Label>
+            <Switch
+              id="drag-mode"
+              checked={settings.isDragModeEnabled}
+              onCheckedChange={(checked) => 
+                onSettingsChange({ ...settings, isDragModeEnabled: checked })
+              }
+            />
+          </div>
+          {settings.isDragModeEnabled && (
+            <p className="text-xs text-muted-foreground">
+              Drag mode: Tree panning disabled, click-to-view disabled, exercise icons can be repositioned.
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 function FilterSection({ title, items, selectedItems, onSelectionChange, renderItem }: FilterSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleItemToggle = (item: string, checked: boolean) => {
     if (checked) {
@@ -101,7 +148,7 @@ function FilterSection({ title, items, selectedItems, onSelectionChange, renderI
             </div>
           )}
           
-          <div className="space-y-2 max-h-40 overflow-y-auto">
+          <div className="space-y-2">
             {items.map(item => (
               <div key={item} className="flex items-center space-x-2">
                 <Checkbox
@@ -209,8 +256,8 @@ export function FilterBar({
   };
 
   return (
-    <Card className="fixed left-0 top-20 z-40 w-fit min-w-64 max-w-80 h-[calc(100vh-5rem)] bg-card border-r border-border rounded-none border-l-0 border-t-0 border-b-0">
-      <div className="flex items-center justify-between p-3 border-b border-border">
+    <Card className="fixed left-0 top-20 z-40 w-fit min-w-64 max-w-80 max-h-[calc(100vh-5rem)] bg-card border-r border-border rounded-none border-l-0 border-t-0 border-b-0 flex flex-col">
+      <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-foreground">Filters</h2>
           {totalActiveFilters > 0 && (
@@ -232,31 +279,13 @@ export function FilterBar({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="overflow-y-auto flex-1">
         {/* Settings Section */}
         <div className="border-b border-border">
-          <div className="flex items-center justify-between p-3">
-            <span className="font-medium text-sm text-foreground">Settings</span>
-          </div>
-          <div className="px-3 pb-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="drag-mode" className="text-sm text-foreground cursor-pointer">
-                Enable node dragging
-              </Label>
-              <Switch
-                id="drag-mode"
-                checked={settings.isDragModeEnabled}
-                onCheckedChange={(checked) => 
-                  onSettingsChange({ ...settings, isDragModeEnabled: checked })
-                }
-              />
-            </div>
-            {settings.isDragModeEnabled && (
-              <p className="text-xs text-muted-foreground">
-                Drag mode: Tree panning disabled, click-to-view disabled, exercise icons can be repositioned.
-              </p>
-            )}
-          </div>
+          <SettingsSection 
+            settings={settings}
+            onSettingsChange={onSettingsChange}
+          />
         </div>
 
         <FilterSection
