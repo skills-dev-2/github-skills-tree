@@ -111,11 +111,10 @@ function FilterSection({ title, items, selectedItems, onSelectionChange, renderI
       >
         <span className="font-medium text-sm text-foreground">{title}</span>
         <div className="flex items-center gap-2">
-          {selectedItems.length > 0 && (
-            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-              {selectedItems.length}
-            </span>
-          )}
+          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full min-w-[24px] text-center" 
+                style={{ visibility: selectedItems.length > 0 ? 'visible' : 'hidden' }}>
+            {selectedItems.length || 0}
+          </span>
           {isExpanded ? (
             <ChevronDownIcon size={16} className="text-muted-foreground" />
           ) : (
@@ -261,11 +260,10 @@ export function FilterBar({
       <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-foreground">Filters</h2>
-          {totalActiveFilters > 0 && (
-            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-              {totalActiveFilters}
-            </span>
-          )}
+          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full min-w-[24px] text-center"
+                style={{ visibility: totalActiveFilters > 0 ? 'visible' : 'hidden' }}>
+            {totalActiveFilters || 0}
+          </span>
         </div>
         {totalActiveFilters > 0 && (
           <Button
