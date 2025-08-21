@@ -94,30 +94,32 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     const draggedNode = nodesWithVisibility.find(n => n.exercise.slug === nodeSlug);
     if (!draggedNode) return;
     
-    // Calculate the offset from the original position
-    const originalPos = originalPositions[nodeSlug] || draggedNode.position;
+    // Calculate the offset from the current position (not original position)
+    const currentPos = draggedNode.position;
     const offset = {
-      x: newPosition.x - originalPos.x,
-      y: newPosition.y - originalPos.y
+      x: newPosition.x - currentPos.x,
+      y: newPosition.y - currentPos.y
     };
     
-    // Function to recursively find all dependent nodes
+    // Function to recursively find all dependent nodes (transitive closure)
     const getAllDependents = (targetSlug: string, visited = new Set<string>()): string[] => {
       if (visited.has(targetSlug)) return []; // Prevent infinite loops
       visited.add(targetSlug);
       
-      // Find direct dependents
+      // Find direct dependents (nodes that depend on targetSlug)
       const directDependents = nodesWithVisibility
         .filter(node => node.dependencies.includes(targetSlug))
         .map(node => node.exercise.slug);
       
-      // Recursively find transitive dependents
-      const allDependents = [...directDependents];
+      // Recursively find transitive dependents and build complete set
+      const allDependents = new Set(directDependents);
+      
       directDependents.forEach(depSlug => {
-        allDependents.push(...getAllDependents(depSlug, visited));
+        const transitiveDependents = getAllDependents(depSlug, visited);
+        transitiveDependents.forEach(slug => allDependents.add(slug));
       });
       
-      return allDependents;
+      return Array.from(allDependents);
     };
     
     // Get all transitive dependencies
@@ -134,7 +136,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     
     // Update dependent node positions with the same offset
     dependentNodes.forEach(depNode => {
-      // Use current position (which includes any custom positions) instead of original position
+      // Use current position (which includes any custom positions)
       const depCurrentPos = depNode.position;
       newPositions[depNode.exercise.slug] = {
         x: depCurrentPos.x + offset.x,
@@ -146,9 +148,10 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     setCustomPositions((current) => ({ ...current, ...newPositions }));
     
     // Log position to console
-    console.log(`Node ${draggedNode.exercise.name} moved to relative position:`, {
-      x: newPosition.x - originalPos.x,
-      y: newPosition.y - originalPos.y,
+    console.log(`Node ${draggedNode.exercise.name} moved by offset:`, {
+      offsetX: offset.x,
+      offsetY: offset.y,
+      newPosition: newPosition,
       dependentsMovedCount: dependentNodes.length,
       dependentNodes: dependentNodes.map(n => n.exercise.name)
     });
