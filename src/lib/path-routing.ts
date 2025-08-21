@@ -177,17 +177,14 @@ function findPathAroundObstacles(
 
 /**
  * Convert nodes to obstacles for pathfinding
+ * Note: We ignore visibility to ensure consistent line paths regardless of filter state
  */
 export function nodesToObstacles(
   nodes: (SkillTreeNode & { visibility: number })[],
-  excludeNodes: string[] = [],
-  minVisibility: number = 0.5
+  excludeNodes: string[] = []
 ): ObstacleNode[] {
   return nodes
-    .filter(node => 
-      !excludeNodes.includes(node.exercise.slug) && 
-      node.visibility >= minVisibility
-    )
+    .filter(node => !excludeNodes.includes(node.exercise.slug))
     .map(node => ({
       x: node.position.x,
       y: node.position.y,
