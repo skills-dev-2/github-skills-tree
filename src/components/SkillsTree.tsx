@@ -4,6 +4,8 @@ import { SkillPath } from './SkillPath';
 import { ExerciseDetails } from './ExerciseDetails';
 import { FilterBar, type FilterState, type SettingsState } from './FilterBar';
 import { SearchBar } from './SearchBar';
+import { Button } from './ui/button';
+import { Settings } from '@phosphor-icons/react';
 import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
 import { nodesToObstacles } from '../lib/path-routing';
@@ -28,6 +30,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     isDragModeEnabled: false
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFiltersVisible, setIsFiltersVisible] = useState(false);
 
   // Store custom node positions in persistent storage
   const [customPositions, setCustomPositions] = useKV("node-positions", {});
@@ -223,18 +226,35 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Filter Bar */}
-      <FilterBar
-        exercises={exercises}
-        paths={paths}
-        filters={filters}
-        onFiltersChange={setFilters}
-        settings={settings}
-        onSettingsChange={handleSettingsChange}
-      />
+      {/* Filter Bar - only show when filters are visible */}
+      {isFiltersVisible && (
+        <FilterBar
+          exercises={exercises}
+          paths={paths}
+          filters={filters}
+          onFiltersChange={setFilters}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+        />
+      )}
 
-      {/* Search Bar - centered on the page with left margin for filter bar */}
-      <div className="absolute left-64 right-0 top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+      {/* Settings Toggle Button - Bottom Left */}
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+        className="fixed bottom-6 left-6 z-50 w-10 h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        title="Toggle Settings"
+      >
+        <Settings size={20} />
+      </Button>
+
+      {/* Search Bar - responsive positioning based on filters visibility */}
+      <div 
+        className={`absolute right-0 top-0 z-40 bg-background/95 backdrop-blur border-b border-border transition-all duration-200 ${
+          isFiltersVisible ? 'left-64' : 'left-0'
+        }`}
+      >
         <div className="px-6 py-3">
           <div className="max-w-2xl mx-auto">
             <SearchBar
@@ -245,13 +265,15 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         </div>
       </div>
 
-      {/* Main content area with left margin for filter bar and top margin for search */}
+      {/* Main content area with responsive left margin and top margin for search */}
       <div 
         ref={containerRef}
-        className="h-full ml-64"
+        className={`h-full transition-all duration-200 ${
+          isFiltersVisible ? 'ml-64' : 'ml-0'
+        }`}
         style={{ 
           cursor: settings.isDragModeEnabled ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-          paddingTop: '159px' // Space for header + search bar
+          paddingTop: '140px' // Space for header (81px) + search bar (59px)
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

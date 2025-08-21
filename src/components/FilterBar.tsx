@@ -256,7 +256,7 @@ export function FilterBar({
   };
 
   return (
-    <Card className="fixed left-0 top-20 z-40 w-fit min-w-64 max-w-80 max-h-[calc(100vh-5rem)] bg-card border-r border-border rounded-none border-l-0 border-t-0 border-b-0 flex flex-col">
+    <Card className="fixed left-0 top-[81px] z-40 w-fit min-w-64 max-w-80 max-h-[calc(100vh-5.5rem)] bg-card border-r border-border rounded-none border-l-0 border-t-0 border-b-0 flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-foreground">Filters</h2>
