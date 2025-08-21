@@ -5,7 +5,7 @@ import { ExerciseDetails } from './ExerciseDetails';
 import { FilterBar, type FilterState, type SettingsState } from './FilterBar';
 import { SearchBar } from './SearchBar';
 import { Button } from './ui/button';
-import { Settings } from '@phosphor-icons/react';
+import { Funnel } from '@phosphor-icons/react';
 import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
 import { nodesToObstacles } from '../lib/path-routing';
@@ -238,39 +238,35 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         />
       )}
 
-      {/* Settings Toggle Button - Bottom Left */}
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-        className="fixed bottom-6 left-6 z-50 w-10 h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-        title="Toggle Settings"
-      >
-        <Settings size={20} />
-      </Button>
-
-      {/* Search Bar - responsive positioning based on filters visibility */}
-      <div 
-        className={`absolute right-0 top-0 z-40 bg-background/95 backdrop-blur border-b border-border transition-all duration-200 ${
-          isFiltersVisible ? 'left-64' : 'left-0'
-        }`}
-      >
+      {/* Search Bar with Filter Toggle */}
+      <div className="absolute right-0 top-0 left-0 z-40 bg-background/95 backdrop-blur border-b border-border">
         <div className="px-6 py-3">
-          <div className="max-w-2xl mx-auto">
-            <SearchBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-            />
+          <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+              className={`w-10 h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-all ${
+                isFiltersVisible ? 'bg-primary text-primary-foreground' : ''
+              }`}
+              title="Toggle Filters"
+            >
+              <Funnel size={20} />
+            </Button>
+            <div className="flex-1">
+              <SearchBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main content area with responsive left margin and top margin for search */}
+      {/* Main content area with top margin for search */}
       <div 
         ref={containerRef}
-        className={`h-full transition-all duration-200 ${
-          isFiltersVisible ? 'ml-64' : 'ml-0'
-        }`}
+        className="h-full"
         style={{ 
           cursor: settings.isDragModeEnabled ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           paddingTop: '140px' // Space for header (81px) + search bar (59px)
