@@ -101,9 +101,29 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
       y: newPosition.y - originalPos.y
     };
     
-    // Find all dependent nodes (nodes that depend on this one directly)
+    // Function to recursively find all dependent nodes
+    const getAllDependents = (targetSlug: string, visited = new Set<string>()): string[] => {
+      if (visited.has(targetSlug)) return []; // Prevent infinite loops
+      visited.add(targetSlug);
+      
+      // Find direct dependents
+      const directDependents = nodesWithVisibility
+        .filter(node => node.dependencies.includes(targetSlug))
+        .map(node => node.exercise.slug);
+      
+      // Recursively find transitive dependents
+      const allDependents = [...directDependents];
+      directDependents.forEach(depSlug => {
+        allDependents.push(...getAllDependents(depSlug, visited));
+      });
+      
+      return allDependents;
+    };
+    
+    // Get all transitive dependencies
+    const allDependentSlugs = getAllDependents(nodeSlug);
     const dependentNodes = nodesWithVisibility.filter(node => 
-      node.dependencies.includes(nodeSlug)
+      allDependentSlugs.includes(node.exercise.slug)
     );
     
     // Update positions for the dragged node and all its dependents
@@ -128,7 +148,8 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     console.log(`Node ${draggedNode.exercise.name} moved to relative position:`, {
       x: newPosition.x - originalPos.x,
       y: newPosition.y - originalPos.y,
-      dependentsMovedCount: dependentNodes.length
+      dependentsMovedCount: dependentNodes.length,
+      dependentNodes: dependentNodes.map(n => n.exercise.name)
     });
   }, [settings.isDragModeEnabled, nodesWithVisibility, originalPositions]);
 
