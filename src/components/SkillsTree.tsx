@@ -197,12 +197,25 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     setIsDragging(false);
   }, []);
 
-  // Calculate SVG dimensions based on node positions
+  // Calculate SVG dimensions based on node positions with padding for icon visibility
   const svgDimensions = useMemo(() => {
     const positions = nodesWithVisibility.map(node => node.position);
-    const maxX = Math.max(...positions.map(p => p.x)) + 100;
-    const maxY = Math.max(...positions.map(p => p.y)) + 100;
-    return { width: Math.max(maxX, 1400), height: Math.max(maxY, 1200) };
+    const minX = Math.min(...positions.map(p => p.x));
+    const maxX = Math.max(...positions.map(p => p.x));
+    const minY = Math.min(...positions.map(p => p.y));
+    const maxY = Math.max(...positions.map(p => p.y));
+    
+    // Add padding to ensure icons don't get clipped (icon size is ~48px, so 80px padding is safe)
+    const padding = 80;
+    const width = Math.max(maxX - Math.min(minX, 0) + padding * 2, 1400);
+    const height = Math.max(maxY - Math.min(minY, 0) + padding * 2, 1200);
+    
+    return { 
+      width, 
+      height, 
+      offsetX: Math.min(minX, 0) - padding, 
+      offsetY: Math.min(minY, 0) - padding 
+    };
   }, [nodesWithVisibility]);
 
   // Get unique color-visibility combinations for marker definitions
@@ -225,7 +238,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
   }, [nodesWithVisibility]);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-background">
+    <div className="relative w-full h-screen overflow-auto bg-background">
       {/* Filter Bar - only show when filters are visible */}
       {isFiltersVisible && (
         <FilterBar
@@ -322,7 +335,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
           </defs>
 
           {/* Render skill paths */}
-          <g className="skill-paths">
+          <g className="skill-paths" transform={`translate(${-svgDimensions.offsetX}, ${-svgDimensions.offsetY})`}>
             {nodesWithVisibility.map(node => {
               return node.dependencies.map(depSlug => {
                 const depNode = nodesWithVisibility.find(n => n.exercise.slug === depSlug);
@@ -350,7 +363,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
           </g>
 
           {/* Render skill nodes */}
-          <g className="skill-nodes">
+          <g className="skill-nodes" transform={`translate(${-svgDimensions.offsetX}, ${-svgDimensions.offsetY})`}>
             {nodesWithVisibility.map(node => (
               <SkillNode
                 key={node.exercise.slug}
@@ -376,6 +389,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
             onClose={() => setSelectedNode(null)}
             position={(selectedNode || hoveredNode)?.position}
             panOffset={panOffset}
+            svgOffset={{ x: svgDimensions.offsetX, y: svgDimensions.offsetY }}
           />
         )}
       </div>

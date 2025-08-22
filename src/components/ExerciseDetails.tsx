@@ -12,9 +12,10 @@ interface ExerciseDetailsProps {
   onClose: () => void;
   position?: { x: number; y: number };
   panOffset?: { x: number; y: number };
+  svgOffset?: { x: number; y: number };
 }
 
-export function ExerciseDetails({ node, isSelected, onClose, position, panOffset = { x: 0, y: 0 } }: ExerciseDetailsProps) {
+export function ExerciseDetails({ node, isSelected, onClose, position, panOffset = { x: 0, y: 0 }, svgOffset = { x: 0, y: 0 } }: ExerciseDetailsProps) {
   const { exercise, path } = node;
   const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({});
   
@@ -33,13 +34,13 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
     const viewportWidth = window.innerWidth - 320; // Subtract filter bar width
     const viewportHeight = window.innerHeight;
     
-    // Calculate position with pan offset applied
-    let left = position.x + panOffset.x + 60; // Offset to the right of the node
-    let top = position.y + panOffset.y - 100; // Offset above the node center
+    // Calculate position with pan offset and SVG offset applied
+    let left = position.x - svgOffset.x + panOffset.x + 60; // Offset to the right of the node
+    let top = position.y - svgOffset.y + panOffset.y - 100; // Offset above the node center
 
     // Adjust horizontal position if it would overflow
     if (left + cardWidth > viewportWidth - padding) {
-      left = position.x + panOffset.x - cardWidth - 60; // Show to the left instead
+      left = position.x - svgOffset.x + panOffset.x - cardWidth - 60; // Show to the left instead
     }
     if (left < padding + 320) { // Account for filter bar width
       left = padding + 320;
