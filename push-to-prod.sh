@@ -6,7 +6,7 @@
 # Load default settings and token.  from .env file
 # REPO
 # GH_TOKEN
-source prod.env
+source .env.production
 
 # If Repo is not set, exit.
 if [ -z "$REPO" ]; then
@@ -21,13 +21,16 @@ if [ -z "$GH_TOKEN" ]; then
 fi
 
 # Configure remote
-REMOTE_NAME=prod-target
+REMOTE_NAME=origin
 URL="https://$GH_TOKEN@github.com/$REPO.git"
 git remote | grep $REMOTE_NAME || git remote add $REMOTE_NAME $URL
 git remote set-url $REMOTE_NAME $URL
 
 # Push to remote
 git push -u $REMOTE_NAME main
+
+# Publish to github pages
+npm run deploy
 
 # Remote the remote since the token is hardcoded in the URL
 git remote remove $REMOTE_NAME
