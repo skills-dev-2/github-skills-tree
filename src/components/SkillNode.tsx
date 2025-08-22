@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import * as Octicons from '@primer/octicons-react';
 import type { SkillTreeNode } from '../lib/types';
+import { UI_CONFIG, EXERCISE_STATUSES } from '../constants';
 
 interface SkillNodeProps {
   node: SkillTreeNode;
@@ -14,7 +15,13 @@ interface SkillNodeProps {
   visibility?: number; // 0 = fully dimmed, 1 = fully visible
 }
 
-// Get icon component directly from Octicons using component name
+/**
+ * Retrieves the appropriate Octicon component by name
+ * Handles both direct component names and backward compatibility
+ * 
+ * @param iconName - The name of the icon (e.g., "WorkflowIcon" or "workflow")
+ * @returns The React component for the icon, or fallback if not found
+ */
 function getIconComponent(iconName: string): React.ComponentType<any> {
   // If iconName is already a component name (e.g., "WorkflowIcon"), use it directly
   if (iconName && (Octicons as any)[iconName]) {
@@ -55,14 +62,14 @@ export function SkillNode({
   
   // Use only filter-based visibility (no automatic status dimming)
   const finalOpacity = visibility;
-  const nodeRadius = isHighlighted || isSelected ? 34 : 28;
-  const ringRadius = nodeRadius + 6;
+  const nodeRadius = isHighlighted || isSelected ? UI_CONFIG.NODE_RADIUS_HIGHLIGHTED : UI_CONFIG.NODE_RADIUS_DEFAULT;
+  const ringRadius = nodeRadius + UI_CONFIG.NODE_RING_OFFSET;
   
   // Use a stable hover area that doesn't change size
-  const hoverRadius = 40; // Slightly larger than the largest visual size
+  const hoverRadius = UI_CONFIG.NODE_HOVER_RADIUS;
   
   // Check if exercise is in progress
-  const isInProgress = exercise.status === 'in-progress';
+  const isInProgress = exercise.status === EXERCISE_STATUSES.IN_PROGRESS;
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (isDragModeEnabled) {
@@ -122,12 +129,12 @@ export function SkillNode({
         <circle
           r={nodeRadius + 12}
           fill="none"
-          stroke="#f97316"
+          stroke={UI_CONFIG.IN_PROGRESS_COLOR}
           strokeWidth="1"
           opacity="0.6"
           className="animate-pulse"
           style={{
-            filter: 'drop-shadow(0 0 8px #f97316)',
+            filter: `drop-shadow(0 0 8px ${UI_CONFIG.IN_PROGRESS_COLOR})`,
           }}
         />
       )}
@@ -149,7 +156,7 @@ export function SkillNode({
       {/* Node background */}
       <circle
         r={nodeRadius}
-        fill={isInProgress ? "#f97316" : "#21262d"}
+        fill={isInProgress ? UI_CONFIG.IN_PROGRESS_COLOR : "#21262d"}
         stroke={path.color}
         strokeWidth="2"
         style={{
@@ -179,7 +186,7 @@ export function SkillNode({
             strokeDasharray={`${2 * Math.PI * (nodeRadius - 4) * 0.6} ${2 * Math.PI * (nodeRadius - 4)}`}
             strokeDashoffset="0"
             style={{
-              animation: 'progress-spin 15s linear infinite',
+              animation: `progress-spin ${UI_CONFIG.PROGRESS_SPIN_DURATION}s linear infinite`,
               transformOrigin: '0 0'
             }}
           />
@@ -195,7 +202,7 @@ export function SkillNode({
       >
         <div className="flex items-center justify-center w-full h-full">
           <IconComponent
-            size={24}
+            size={UI_CONFIG.NODE_ICON_SIZE}
             style={{ color: isInProgress ? '#ffffff' : path.color }}
           />
         </div>

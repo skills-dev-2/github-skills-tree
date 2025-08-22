@@ -1,5 +1,6 @@
 import React from 'react';
 import { SkillsTree } from './components/SkillsTree';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useExercises, usePaths } from './hooks/use-data';
 import { Toaster } from './components/ui/sonner';
 
@@ -33,35 +34,37 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header with left alignment */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur border-b border-border">
-        <div className="pl-6 pr-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">GitHub Skills Roadmap</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Explore the learning paths for GitHub mastery
-              </p>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>{exercises.length} exercises</span>
-              <span>{paths.length} learning paths</span>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        {/* Header with left alignment */}
+        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur border-b border-border">
+          <div className="pl-6 pr-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">GitHub Skills Roadmap</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Explore the learning paths for GitHub mastery
+                </p>
+              </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>{exercises.length} exercises</span>
+                <span>{paths.length} learning paths</span>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Skills Tree */}
-      <main className="relative" style={{ marginTop: '-1px' }}>
-        <SkillsTree 
-          exercises={exercises} 
-          paths={paths} 
-        />
-      </main>
+        {/* Main Skills Tree */}
+        <main className="relative" style={{ marginTop: '-1px' }}>
+          <SkillsTree 
+            exercises={exercises} 
+            paths={paths} 
+          />
+        </main>
 
-      <Toaster />
-    </div>
+        <Toaster />
+      </div>
+    </ErrorBoundary>
   );
 }
 

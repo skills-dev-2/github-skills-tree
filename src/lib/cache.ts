@@ -1,5 +1,8 @@
 /**
- * Simple in-memory cache with TTL support for GitHub API responses
+ * GitHub API Response Caching System
+ * 
+ * Provides in-memory caching with TTL support to reduce API calls and improve performance.
+ * Automatically cleans up expired entries to prevent memory leaks.
  */
 
 interface CacheEntry<T> {
@@ -7,6 +10,10 @@ interface CacheEntry<T> {
   timestamp: number;
   ttl: number; // Time to live in milliseconds
 }
+
+/**
+ * In-memory cache implementation with automatic cleanup
+ */
 
 class MemoryCache {
   private cache = new Map<string, CacheEntry<any>>();

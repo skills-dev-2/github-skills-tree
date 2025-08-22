@@ -9,7 +9,10 @@ import { Funnel } from '@phosphor-icons/react';
 import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
 import { nodesToObstacles } from '../lib/path-routing';
+import { calculateDraggedPositions, logDragOperation } from '../lib/drag-utils';
 import { useKV } from '@github/spark/hooks';
+import { useSvgDimensions, useArrowMarkers } from '../hooks/use-svg-utils';
+import { UI_CONFIG, FILTER_DEFAULTS } from '../constants';
 import type { SkillTreeNode } from '../lib/types';
 
 interface SkillsTreeProps {
@@ -20,11 +23,12 @@ interface SkillsTreeProps {
 export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
   const [selectedNode, setSelectedNode] = useState<SkillTreeNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<SkillTreeNode | null>(null);
+  // Initialize filters with default values
   const [filters, setFilters] = useState<FilterState>({
     paths: [],
     products: [],
     difficulties: [],
-    statuses: ['Active']
+    statuses: FILTER_DEFAULTS.STATUSES as unknown as string[]
   });
   const [settings, setSettings] = useState<SettingsState>({
     isDragModeEnabled: false
@@ -35,12 +39,16 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
   // Store custom node positions in persistent storage
   const [customPositions, setCustomPositions] = useKV("node-positions", {});
 
-  // Pan state for drag-to-move functionality
+  // Pan state for drag-to-move functionality (when not in drag mode)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Processes skill tree data and applies custom positions when in drag mode
+   */
 
   const skillTreeNodes = useMemo(() => {
     const nodes = createSkillTreeData(exercises, paths);
@@ -90,81 +98,42 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     }
   };
 
+  /**
+   * Handles node drag operations by calculating new positions for the dragged node
+   * and all its transitive dependents
+   */
   const handleNodeDrag = useCallback((nodeSlug: string, newPosition: { x: number; y: number }) => {
     if (!settings.isDragModeEnabled) return;
     
-    // Find the dragged node
     const draggedNode = nodesWithVisibility.find(n => n.exercise.slug === nodeSlug);
     if (!draggedNode) return;
     
-    // Calculate the offset from the current position (not original position)
-    const currentPos = draggedNode.position;
-    const offset = {
-      x: newPosition.x - currentPos.x,
-      y: newPosition.y - currentPos.y
-    };
-    
-    // Function to recursively find all dependent nodes (transitive closure)
-    const getAllDependents = (targetSlug: string, visited = new Set<string>()): string[] => {
-      if (visited.has(targetSlug)) return []; // Prevent infinite loops
-      visited.add(targetSlug);
-      
-      // Find direct dependents (nodes that depend on targetSlug)
-      const directDependents = nodesWithVisibility
-        .filter(node => node.dependencies.includes(targetSlug))
-        .map(node => node.exercise.slug);
-      
-      // Recursively find transitive dependents and build complete set
-      const allDependents = new Set(directDependents);
-      
-      directDependents.forEach(depSlug => {
-        const transitiveDependents = getAllDependents(depSlug, visited);
-        transitiveDependents.forEach(slug => allDependents.add(slug));
-      });
-      
-      return Array.from(allDependents);
-    };
-    
-    // Get all transitive dependencies
-    const allDependentSlugs = getAllDependents(nodeSlug);
-    const dependentNodes = nodesWithVisibility.filter(node => 
-      allDependentSlugs.includes(node.exercise.slug)
-    );
-    
-    // Update positions for the dragged node and all its dependents
-    const newPositions: Record<string, { x: number; y: number }> = {};
-    
-    // Update the dragged node position
-    newPositions[nodeSlug] = newPosition;
-    
-    // Update dependent node positions with the same offset
-    dependentNodes.forEach(depNode => {
-      // Use current position (which includes any custom positions)
-      const depCurrentPos = depNode.position;
-      newPositions[depNode.exercise.slug] = {
-        x: depCurrentPos.x + offset.x,
-        y: depCurrentPos.y + offset.y
-      };
-    });
+    // Calculate new positions using utility function
+    const newPositions = calculateDraggedPositions(nodeSlug, newPosition, nodesWithVisibility);
     
     // Update state with new positions
     setCustomPositions((current) => ({ ...current, ...newPositions }));
     
-    // Log position to console
-    console.log(`Node ${draggedNode.exercise.name} moved by offset:`, {
-      offsetX: offset.x,
-      offsetY: offset.y,
-      newPosition: newPosition,
-      dependentsMovedCount: dependentNodes.length,
-      dependentNodes: dependentNodes.map(n => n.exercise.name)
-    });
-  }, [settings.isDragModeEnabled, nodesWithVisibility, originalPositions]);
+    // Log the operation for debugging
+    const offset = {
+      x: newPosition.x - draggedNode.position.x,
+      y: newPosition.y - draggedNode.position.y
+    };
+    const dependentSlugs = Object.keys(newPositions).filter(slug => slug !== nodeSlug);
+    const dependentNodes = nodesWithVisibility.filter(node => 
+      dependentSlugs.includes(node.exercise.slug)
+    );
+    
+    logDragOperation(draggedNode, offset, newPosition, dependentNodes);
+  }, [settings.isDragModeEnabled, nodesWithVisibility]);
 
   const handleNodeHover = (node: SkillTreeNode | null) => {
     setHoveredNode(node);
   };
 
-  // Pan/drag functionality - only enabled when drag mode is disabled
+  /**
+   * Handles mouse events for panning the entire tree (only when drag mode is disabled)
+   */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Only start dragging if clicking on SVG background, not on nodes or other elements
     // AND drag mode is disabled
@@ -197,45 +166,20 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     setIsDragging(false);
   }, []);
 
-  // Calculate SVG dimensions based on node positions with padding for icon visibility
-  const svgDimensions = useMemo(() => {
-    const positions = nodesWithVisibility.map(node => node.position);
-    const minX = Math.min(...positions.map(p => p.x));
-    const maxX = Math.max(...positions.map(p => p.x));
-    const minY = Math.min(...positions.map(p => p.y));
-    const maxY = Math.max(...positions.map(p => p.y));
-    
-    // Add padding to ensure icons don't get clipped (icon size is ~48px, so 80px padding is safe)
-    const padding = 80;
-    const width = Math.max(maxX - Math.min(minX, 0) + padding * 2, 1400);
-    const height = Math.max(maxY - Math.min(minY, 0) + padding * 2, 1200);
-    
-    return { 
-      width, 
-      height, 
-      offsetX: Math.min(minX, 0) - padding, 
-      offsetY: Math.min(minY, 0) - padding 
-    };
-  }, [nodesWithVisibility]);
+  /**
+   * Calculates SVG dimensions based on node positions with padding to prevent clipping
+   */
+  const svgDimensions = useSvgDimensions(
+    nodesWithVisibility, 
+    UI_CONFIG.SVG_PADDING,
+    UI_CONFIG.MIN_SVG_WIDTH,
+    UI_CONFIG.MIN_SVG_HEIGHT
+  );
 
-  // Get unique color-visibility combinations for marker definitions
-  const uniqueMarkers = useMemo(() => {
-    const markers = new Map<string, { color: string; visibility: number }>();
-    nodesWithVisibility.forEach(node => {
-      // Add markers for dependency nodes (source of paths)
-      node.dependencies.forEach(depSlug => {
-        const depNode = nodesWithVisibility.find(n => n.exercise.slug === depSlug);
-        if (depNode) {
-          const key = `${depNode.path.color}-${Math.round(node.visibility * 100)}`;
-          markers.set(key, { 
-            color: depNode.path.color, 
-            visibility: node.visibility 
-          });
-        }
-      });
-    });
-    return Array.from(markers.entries()).map(([key, value]) => ({ key, ...value }));
-  }, [nodesWithVisibility]);
+  /**
+   * Creates unique marker definitions for path arrows with different colors and opacity
+   */
+  const uniqueMarkers = useArrowMarkers(nodesWithVisibility);
 
   return (
     <div className="relative w-full h-screen overflow-auto bg-background">
@@ -282,7 +226,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         className="h-full"
         style={{ 
           cursor: settings.isDragModeEnabled ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-          paddingTop: '140px' // Space for header (81px) + search bar (59px)
+          paddingTop: `${UI_CONFIG.TOTAL_TOP_PADDING}px`
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

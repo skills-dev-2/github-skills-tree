@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Exercise, Path } from '../lib/types';
 import { cachedFetch, createCacheKey } from '../lib/cache';
+import { GITHUB_CONFIG } from '../constants';
 
-const GITHUB_API_BASE = 'https://api.github.com/repos/chriswblake/dev-skills-exercises/contents';
+const GITHUB_API_BASE = GITHUB_CONFIG.API_BASE;
 
 interface GitHubFile {
   name: string;
@@ -14,7 +15,7 @@ async function fetchGitHubFiles(path: string): Promise<GitHubFile[]> {
   const cacheKey = createCacheKey('github-files', path);
   
   return cachedFetch(cacheKey, async () => {
-    const response = await fetch(`${GITHUB_API_BASE}/${path}?ref=main`);
+    const response = await fetch(`${GITHUB_API_BASE}/${path}?ref=${GITHUB_CONFIG.BRANCH}`);
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error(`GitHub repository or path not found: ${path}`);
@@ -24,7 +25,7 @@ async function fetchGitHubFiles(path: string): Promise<GitHubFile[]> {
       throw new Error(`Failed to fetch files from ${path}: ${response.status} ${response.statusText}`);
     }
     return response.json();
-  }, 60); // Cache for 60 minutes
+  }, GITHUB_CONFIG.CACHE_TTL_MINUTES);
 }
 
 async function fetchFileContent(downloadUrl: string) {
@@ -36,7 +37,7 @@ async function fetchFileContent(downloadUrl: string) {
       throw new Error(`Failed to fetch file content: ${response.status} ${response.statusText}`);
     }
     return response.json();
-  }, 60); // Cache for 60 minutes
+  }, GITHUB_CONFIG.CACHE_TTL_MINUTES);
 }
 
 async function fetchAllExercisesRecursively(basePath: string = 'exercises'): Promise<GitHubFile[]> {
