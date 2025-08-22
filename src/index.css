@@ -104,10 +104,12 @@
 }
 
 @keyframes progress-spin {
-  from {
+  0% {
+    transform: rotate(-90deg);
     stroke-dashoffset: 0;
   }
-  to {
-    stroke-dashoffset: -157.08; /* -2π * 25 (radius) */
+  100% {
+    transform: rotate(270deg);
+    stroke-dashoffset: 0;
   }
 }

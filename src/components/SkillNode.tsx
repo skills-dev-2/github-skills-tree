@@ -178,10 +178,8 @@ export function SkillNode({
             strokeWidth="2"
             strokeDasharray={`${2 * Math.PI * (nodeRadius - 4) * 0.6} ${2 * Math.PI * (nodeRadius - 4)}`}
             strokeDashoffset="0"
-            transform="rotate(-90)"
-            className="animate-spin"
             style={{
-              animationDuration: '3s',
+              animation: 'progress-spin 3s linear infinite',
               transformOrigin: '0 0'
             }}
           />
