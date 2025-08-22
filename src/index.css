@@ -86,3 +86,28 @@
 .svg-background:active {
   cursor: grabbing;
 }
+
+/* In-progress status animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+.in-progress-ring {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes progress-spin {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -157.08; /* -2π * 25 (radius) */
+  }
+}

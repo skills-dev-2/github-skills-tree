@@ -1,6 +1,6 @@
 export interface Exercise {
   slug: string;
-  status: 'active' | 'scheduled' | 'tentative';
+  status: 'active' | 'scheduled' | 'tentative' | 'in-progress';
   name: string;
   icon: string;
   description: string;

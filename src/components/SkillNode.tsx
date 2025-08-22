@@ -60,6 +60,9 @@ export function SkillNode({
   
   // Use a stable hover area that doesn't change size
   const hoverRadius = 40; // Slightly larger than the largest visual size
+  
+  // Check if exercise is in progress
+  const isInProgress = exercise.status === 'in-progress';
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (isDragModeEnabled) {
@@ -114,6 +117,21 @@ export function SkillNode({
         cursor: isDragModeEnabled ? (isDragging ? 'grabbing' : 'grab') : 'pointer'
       }}
     >
+      {/* In-progress pulsing ring */}
+      {isInProgress && (
+        <circle
+          r={nodeRadius + 12}
+          fill="none"
+          stroke="#f97316"
+          strokeWidth="1"
+          opacity="0.6"
+          className="animate-pulse"
+          style={{
+            filter: 'drop-shadow(0 0 8px #f97316)',
+          }}
+        />
+      )}
+      
       {/* Selection ring */}
       {(isSelected || isHighlighted) && (
         <circle
@@ -131,7 +149,7 @@ export function SkillNode({
       {/* Node background */}
       <circle
         r={nodeRadius}
-        fill="#21262d"
+        fill={isInProgress ? "#f97316" : "#21262d"}
         stroke={path.color}
         strokeWidth="2"
         style={{
@@ -141,6 +159,34 @@ export function SkillNode({
           transition: isDragging ? 'none' : 'r 0.2s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease'
         }}
       />
+      
+      {/* In-progress progress indicator arc */}
+      {isInProgress && (
+        <>
+          {/* Background arc */}
+          <circle
+            r={nodeRadius - 4}
+            fill="none"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="2"
+          />
+          {/* Animated progress arc */}
+          <circle
+            r={nodeRadius - 4}
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2"
+            strokeDasharray={`${2 * Math.PI * (nodeRadius - 4) * 0.6} ${2 * Math.PI * (nodeRadius - 4)}`}
+            strokeDashoffset="0"
+            transform="rotate(-90)"
+            className="animate-spin"
+            style={{
+              animationDuration: '3s',
+              transformOrigin: '0 0'
+            }}
+          />
+        </>
+      )}
       
       {/* Icon */}
       <foreignObject
@@ -152,10 +198,23 @@ export function SkillNode({
         <div className="flex items-center justify-center w-full h-full">
           <IconComponent
             size={24}
-            style={{ color: path.color }}
+            style={{ color: isInProgress ? '#ffffff' : path.color }}
           />
         </div>
       </foreignObject>
+      
+      {/* In-progress status indicator dot */}
+      {isInProgress && (
+        <circle
+          r={4}
+          cx={nodeRadius - 8}
+          cy={-nodeRadius + 8}
+          fill="#fbbf24"
+          stroke="#ffffff"
+          strokeWidth="1"
+          className="animate-pulse"
+        />
+      )}
       
       {/* Exercise name - only show on hover/selection when not in drag mode */}
       {!isDragModeEnabled && (isHighlighted || isSelected) && (
