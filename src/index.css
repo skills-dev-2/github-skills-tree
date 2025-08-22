@@ -87,6 +87,29 @@
   cursor: grabbing;
 }
 
+/* Mobile touch improvements */
+@media (max-width: 767px) {
+  .skill-node {
+    /* Larger touch targets on mobile */
+    --node-touch-radius: 48px;
+  }
+  
+  /* Prevent text selection on mobile while dragging */
+  .svg-background {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Smooth scrolling for mobile */
+  body {
+    overscroll-behavior: contain;
+  }
+}
+
 /* In-progress status animations */
 @keyframes pulse-glow {
   0%, 100% {

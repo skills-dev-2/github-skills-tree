@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import * as Octicons from '@primer/octicons-react';
 import type { SkillTreeNode } from '../lib/types';
 import { useGitHubReactions } from '../hooks/use-github-reactions';
+import { useResponsive } from '../hooks/use-responsive';
 
 interface ExerciseDetailsProps {
   node: SkillTreeNode;
@@ -17,6 +18,7 @@ interface ExerciseDetailsProps {
 
 export function ExerciseDetails({ node, isSelected, onClose, position, panOffset = { x: 0, y: 0 }, svgOffset = { x: 0, y: 0 } }: ExerciseDetailsProps) {
   const { exercise, path } = node;
+  const { isMobile } = useResponsive();
   const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({});
   
   // Fetch GitHub reactions if issue URL is available
@@ -24,14 +26,30 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
 
   // Calculate safe position that keeps popup visible
   const calculatePosition = () => {
-    if (!position) return { top: '1.5rem', right: '1.5rem' };
+    if (!position) return { 
+      top: '1.5rem', 
+      right: '1.5rem',
+      left: 'auto',
+      bottom: 'auto'
+    };
+
+    // Mobile: use bottom modal style
+    if (isMobile) {
+      return {
+        position: 'fixed' as const,
+        left: '1rem',
+        right: '1rem',
+        bottom: '1rem',
+        top: 'auto'
+      };
+    }
 
     const cardWidth = 320; // 80 * 4px (w-80)
     const cardHeight = 400; // Approximate height
     const padding = 20; // Minimum distance from viewport edge
 
-    // Get viewport dimensions (accounting for filter bar)
-    const viewportWidth = window.innerWidth - 320; // Subtract filter bar width
+    // Get viewport dimensions (accounting for filter bar on desktop)
+    const viewportWidth = window.innerWidth - (window.innerWidth >= 768 ? 320 : 0);
     const viewportHeight = window.innerHeight;
     
     // Calculate position with pan offset and SVG offset applied
@@ -42,8 +60,8 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
     if (left + cardWidth > viewportWidth - padding) {
       left = position.x - svgOffset.x + panOffset.x - cardWidth - 60; // Show to the left instead
     }
-    if (left < padding + 320) { // Account for filter bar width
-      left = padding + 320;
+    if (left < padding + (window.innerWidth >= 768 ? 320 : 0)) { // Account for filter bar width
+      left = padding + (window.innerWidth >= 768 ? 320 : 0);
     }
 
     // Adjust vertical position if it would overflow
@@ -90,17 +108,30 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
   };
 
   return (
-    <Card 
-      className={`
-        w-80 border-border bg-card/95 backdrop-blur transition-all duration-200 ease-out
-        ${isSelected ? 'z-50 scale-100 opacity-100' : 'z-40 pointer-events-none scale-95 opacity-90'}
-      `}
-      style={{
-        ...positionStyle,
-        borderColor: path.color,
-        boxShadow: `0 0 24px ${path.color}33`
-      }}
-    >
+    <>
+      {/* Mobile backdrop for selected state */}
+      {isSelected && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={onClose}
+        />
+      )}
+      
+      <Card 
+        className={`
+          border-border bg-card/95 backdrop-blur transition-all duration-200 ease-out
+          ${isSelected ? 'z-50 scale-100 opacity-100' : 'z-40 pointer-events-none scale-95 opacity-90'}
+          /* Mobile: full width bottom sheet */
+          w-full max-h-[70vh] overflow-y-auto
+          /* Desktop: fixed width positioning */
+          md:w-80 md:max-h-none md:overflow-visible
+        `}
+        style={{
+          ...positionStyle,
+          borderColor: path.color,
+          boxShadow: `0 0 24px ${path.color}33`
+        }}
+      >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-card-foreground flex items-center gap-2">
@@ -254,6 +285,7 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
           )}
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </>
   );
 }

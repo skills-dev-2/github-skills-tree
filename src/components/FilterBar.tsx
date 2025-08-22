@@ -7,6 +7,7 @@ import { Checkbox } from './ui/checkbox';
 import { Card } from './ui/card';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
+import { useResponsive } from '../hooks/use-responsive';
 import type { Exercise, Path } from '../lib/types';
 
 export interface FilterState {
@@ -27,6 +28,7 @@ interface FilterBarProps {
   onFiltersChange: (filters: FilterState) => void;
   settings: SettingsState;
   onSettingsChange: (settings: SettingsState) => void;
+  onClose?: () => void;
 }
 
 interface FilterSectionProps {
@@ -177,8 +179,10 @@ export function FilterBar({
   filters, 
   onFiltersChange,
   settings,
-  onSettingsChange
+  onSettingsChange,
+  onClose
 }: FilterBarProps) {
+  const { isMobile, isDesktop } = useResponsive();
 
   // Extract unique values from exercises
   const filterOptions = useMemo(() => {
@@ -255,67 +259,100 @@ export function FilterBar({
   };
 
   return (
-    <Card className="fixed left-4 z-40 w-fit min-w-64 max-w-80 max-h-[calc(100vh-10rem)] bg-card border border-border rounded-lg shadow-2xl flex flex-col"
-          style={{ top: '140px' }}>
-      <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-foreground">Filters</h2>
-          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full min-w-[24px] text-center"
-                style={{ visibility: totalActiveFilters > 0 ? 'visible' : 'hidden' }}>
-            {totalActiveFilters || 0}
-          </span>
+    <>
+      {/* Mobile backdrop */}
+      {!isDesktop && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Filter card - responsive positioning */}
+      <Card className="
+        fixed z-40 bg-card border border-border rounded-lg shadow-2xl flex flex-col
+        /* Mobile: full screen modal */
+        inset-x-4 inset-y-4 
+        /* Tablet: centered modal */
+        sm:inset-x-8 sm:inset-y-8 sm:max-w-md sm:mx-auto
+        /* Desktop: floating sidebar */
+        md:left-4 md:right-auto md:w-fit md:min-w-64 md:max-w-80 md:max-h-[calc(100vh-10rem)] md:inset-y-auto
+      "
+      style={{ 
+        top: isDesktop ? '140px' : undefined 
+      }}>
+        <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-foreground">Filters</h2>
+            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full min-w-[24px] text-center"
+                  style={{ visibility: totalActiveFilters > 0 ? 'visible' : 'hidden' }}>
+              {totalActiveFilters || 0}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {totalActiveFilters > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllFilters}
+                className="text-xs h-6 px-2"
+              >
+                <XIcon size={12} className="mr-1" />
+                Clear All
+              </Button>
+            )}
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className={`h-8 w-8 p-0 ${isDesktop ? 'hidden' : ''}`}
+              >
+                <XIcon size={16} />
+              </Button>
+            )}
+          </div>
         </div>
-        {totalActiveFilters > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearAllFilters}
-            className="text-xs h-6 px-2"
-          >
-            <XIcon size={12} className="mr-1" />
-            Clear All
-          </Button>
-        )}
-      </div>
 
-      <div className="overflow-y-auto flex-1">
-        {/* Settings Section */}
-        <div className="border-b border-border">
-          <SettingsSection 
-            settings={settings}
-            onSettingsChange={onSettingsChange}
+        <div className="overflow-y-auto flex-1">
+          {/* Settings Section */}
+          <div className="border-b border-border">
+            <SettingsSection 
+              settings={settings}
+              onSettingsChange={onSettingsChange}
+            />
+          </div>
+
+          <FilterSection
+            title="Learning Path"
+            items={filterOptions.paths}
+            selectedItems={filters.paths}
+            onSelectionChange={(paths) => onFiltersChange({ ...filters, paths })}
+            renderItem={renderPathItem}
+          />
+          
+          <FilterSection
+            title="Product"
+            items={filterOptions.products}
+            selectedItems={filters.products}
+            onSelectionChange={(products) => onFiltersChange({ ...filters, products })}
+          />
+          
+          <FilterSection
+            title="Difficulty"
+            items={filterOptions.difficulties}
+            selectedItems={filters.difficulties}
+            onSelectionChange={(difficulties) => onFiltersChange({ ...filters, difficulties })}
+          />
+          
+          <FilterSection
+            title="Status"
+            items={filterOptions.statuses}
+            selectedItems={filters.statuses}
+            onSelectionChange={(statuses) => onFiltersChange({ ...filters, statuses })}
           />
         </div>
-
-        <FilterSection
-          title="Learning Path"
-          items={filterOptions.paths}
-          selectedItems={filters.paths}
-          onSelectionChange={(paths) => onFiltersChange({ ...filters, paths })}
-          renderItem={renderPathItem}
-        />
-        
-        <FilterSection
-          title="Product"
-          items={filterOptions.products}
-          selectedItems={filters.products}
-          onSelectionChange={(products) => onFiltersChange({ ...filters, products })}
-        />
-        
-        <FilterSection
-          title="Difficulty"
-          items={filterOptions.difficulties}
-          selectedItems={filters.difficulties}
-          onSelectionChange={(difficulties) => onFiltersChange({ ...filters, difficulties })}
-        />
-        
-        <FilterSection
-          title="Status"
-          items={filterOptions.statuses}
-          selectedItems={filters.statuses}
-          onSelectionChange={(statuses) => onFiltersChange({ ...filters, statuses })}
-        />
-      </div>
-    </Card>
+      </Card>
+    </>
   );
 }

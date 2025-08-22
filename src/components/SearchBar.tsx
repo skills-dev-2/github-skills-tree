@@ -15,15 +15,16 @@ export function SearchBar({ searchTerm, onSearchChange }: SearchBarProps) {
 
   return (
     <div className="relative">
-      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-        <Search size={18} />
+      <div className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+        <Search size={16} className="sm:hidden" />
+        <Search size={18} className="hidden sm:block" />
       </div>
       <Input
         type="text"
-        placeholder="Search exercises, paths, descriptions, products, status..."
+        placeholder="Search exercises..."
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="pl-10 pr-10 bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
+        className="pl-8 sm:pl-10 pr-8 sm:pr-10 text-sm bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
         aria-label="Search all exercises and learning paths"
       />
       {searchTerm && (
@@ -31,10 +32,11 @@ export function SearchBar({ searchTerm, onSearchChange }: SearchBarProps) {
           variant="ghost"
           size="sm"
           onClick={handleClear}
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 p-0 text-muted-foreground hover:text-foreground"
           aria-label="Clear search"
         >
-          <X size={16} />
+          <X size={14} className="sm:hidden" />
+          <X size={16} className="hidden sm:block" />
         </Button>
       )}
     </div>

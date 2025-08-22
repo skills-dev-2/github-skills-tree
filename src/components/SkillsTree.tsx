@@ -12,6 +12,7 @@ import { nodesToObstacles } from '../lib/path-routing';
 import { calculateDraggedPositions, logDragOperation } from '../lib/drag-utils';
 import { useKV } from '@github/spark/hooks';
 import { useSvgDimensions, useArrowMarkers } from '../hooks/use-svg-utils';
+import { useResponsive } from '../hooks/use-responsive';
 import { UI_CONFIG, FILTER_DEFAULTS } from '../constants';
 import type { SkillTreeNode } from '../lib/types';
 
@@ -21,6 +22,7 @@ interface SkillsTreeProps {
 }
 
 export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
+  const { isMobile } = useResponsive();
   const [selectedNode, setSelectedNode] = useState<SkillTreeNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<SkillTreeNode | null>(null);
   // Initialize filters with default values
@@ -161,19 +163,50 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
     setIsDragging(false);
   }, []);
 
-  // Also handle mouse leave to stop dragging
   const handleMouseLeave = useCallback(() => {
     setIsDragging(false);
   }, []);
 
   /**
-   * Calculates SVG dimensions based on node positions with padding to prevent clipping
+   * Touch event handlers for mobile panning support
+   */
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Only start dragging if touching SVG background and drag mode is disabled
+    const target = e.target as Element;
+    if (!settings.isDragModeEnabled && (target.tagName === 'svg' || target.classList.contains('svg-background'))) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX, y: touch.clientY });
+      setPanStart({ x: panOffset.x, y: panOffset.y });
+      e.preventDefault();
+    }
+  }, [panOffset, settings.isDragModeEnabled]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (isDragging && e.touches.length === 1) {
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - dragStart.x;
+      const deltaY = touch.clientY - dragStart.y;
+      setPanOffset({
+        x: panStart.x + deltaX,
+        y: panStart.y + deltaY
+      });
+      e.preventDefault(); // Prevent scrolling
+    }
+  }, [isDragging, dragStart, panStart]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  /**
+   * Calculates SVG dimensions based on node positions with responsive padding
    */
   const svgDimensions = useSvgDimensions(
     nodesWithVisibility, 
-    UI_CONFIG.SVG_PADDING,
-    UI_CONFIG.MIN_SVG_WIDTH,
-    UI_CONFIG.MIN_SVG_HEIGHT
+    isMobile ? UI_CONFIG.SVG_PADDING_MOBILE : UI_CONFIG.SVG_PADDING,
+    isMobile ? UI_CONFIG.MIN_SVG_WIDTH_MOBILE : UI_CONFIG.MIN_SVG_WIDTH,
+    isMobile ? UI_CONFIG.MIN_SVG_HEIGHT_MOBILE : UI_CONFIG.MIN_SVG_HEIGHT
   );
 
   /**
@@ -183,7 +216,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
 
   return (
     <div className="relative w-full h-screen overflow-auto bg-background">
-      {/* Filter Bar - only show when filters are visible */}
+      {/* Filter Bar - responsive positioning */}
       {isFiltersVisible && (
         <FilterBar
           exercises={exercises}
@@ -192,23 +225,25 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
           onFiltersChange={setFilters}
           settings={settings}
           onSettingsChange={handleSettingsChange}
+          onClose={() => setIsFiltersVisible(false)}
         />
       )}
 
-      {/* Search Bar with Filter Toggle */}
+      {/* Search Bar with Filter Toggle - mobile responsive */}
       <div className="absolute right-0 top-0 left-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="px-6 py-3">
-          <div className="max-w-2xl mx-auto flex items-center gap-3">
+        <div className="px-3 sm:px-6 py-3">
+          <div className="flex items-center gap-2 sm:gap-3 sm:max-w-2xl sm:mx-auto">
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-              className={`w-10 h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-all ${
+              className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-all ${
                 isFiltersVisible ? 'bg-primary text-primary-foreground' : ''
               }`}
               title="Toggle Filters"
             >
-              <Funnel size={20} />
+              <Funnel size={16} className="sm:hidden" />
+              <Funnel size={20} className="hidden sm:block" />
             </Button>
             <div className="flex-1">
               <SearchBar
@@ -226,11 +261,13 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         className="h-full"
         style={{ 
           cursor: settings.isDragModeEnabled ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-          paddingTop: `${UI_CONFIG.TOTAL_TOP_PADDING}px`
+          paddingTop: `${isMobile ? UI_CONFIG.TOTAL_TOP_PADDING_MOBILE : UI_CONFIG.TOTAL_TOP_PADDING}px`
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <svg
           width={svgDimensions.width}
@@ -243,6 +280,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
             transition: isDragging ? 'none' : 'transform 0.1s ease'
           }}
           onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
         >
           {/* Background rect for catching mouse events */}
           <rect

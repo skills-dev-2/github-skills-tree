@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import * as Octicons from '@primer/octicons-react';
 import type { SkillTreeNode } from '../lib/types';
 import { UI_CONFIG, EXERCISE_STATUSES } from '../constants';
+import { useResponsive } from '../hooks/use-responsive';
 
 interface SkillNodeProps {
   node: SkillTreeNode;
@@ -51,6 +52,7 @@ export function SkillNode({
   visibility = 1
 }: SkillNodeProps) {
   const { exercise, path, position } = node;
+  const { isMobile } = useResponsive();
   
   // Drag state
   const [isDragging, setIsDragging] = useState(false);
@@ -60,13 +62,16 @@ export function SkillNode({
   // Get the appropriate icon component using the React component name
   const IconComponent = getIconComponent(exercise.icon);
   
+  // Use responsive sizing
+  const nodeRadiusDefault = isMobile ? UI_CONFIG.NODE_RADIUS_DEFAULT_MOBILE : UI_CONFIG.NODE_RADIUS_DEFAULT;
+  const nodeRadiusHighlighted = isMobile ? UI_CONFIG.NODE_RADIUS_HIGHLIGHTED_MOBILE : UI_CONFIG.NODE_RADIUS_HIGHLIGHTED;
+  const hoverRadius = isMobile ? UI_CONFIG.NODE_HOVER_RADIUS_MOBILE : UI_CONFIG.NODE_HOVER_RADIUS;
+  const iconSize = isMobile ? UI_CONFIG.NODE_ICON_SIZE_MOBILE : UI_CONFIG.NODE_ICON_SIZE;
+  
   // Use only filter-based visibility (no automatic status dimming)
   const finalOpacity = visibility;
-  const nodeRadius = isHighlighted || isSelected ? UI_CONFIG.NODE_RADIUS_HIGHLIGHTED : UI_CONFIG.NODE_RADIUS_DEFAULT;
+  const nodeRadius = isHighlighted || isSelected ? nodeRadiusHighlighted : nodeRadiusDefault;
   const ringRadius = nodeRadius + UI_CONFIG.NODE_RING_OFFSET;
-  
-  // Use a stable hover area that doesn't change size
-  const hoverRadius = UI_CONFIG.NODE_HOVER_RADIUS;
   
   // Check if exercise is in progress
   const isInProgress = exercise.status === EXERCISE_STATUSES.IN_PROGRESS;
@@ -81,11 +86,31 @@ export function SkillNode({
     }
   }, [isDragModeEnabled, position]);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isDragModeEnabled) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX, y: touch.clientY });
+      setInitialPosition({ x: position.x, y: position.y });
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, [isDragModeEnabled, position]);
+
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDragModeEnabled && !isDragging) {
       onClick();
     }
+  }, [isDragModeEnabled, isDragging, onClick]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    // Only trigger click if we're not in drag mode and not currently dragging
+    if (!isDragModeEnabled && !isDragging) {
+      onClick();
+    }
+    setIsDragging(false); // Always stop dragging on touch end
   }, [isDragModeEnabled, isDragging, onClick]);
 
   // Handle mouse move and up events globally when dragging
@@ -102,16 +127,38 @@ export function SkillNode({
       onDrag(exercise.slug, newPosition);
     };
 
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - dragStart.x;
+        const deltaY = touch.clientY - dragStart.y;
+        const newPosition = {
+          x: initialPosition.x + deltaX,
+          y: initialPosition.y + deltaY
+        };
+        onDrag(exercise.slug, newPosition);
+        e.preventDefault(); // Prevent scrolling
+      }
+    };
+
     const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleGlobalTouchEnd = () => {
       setIsDragging(false);
     };
 
     document.addEventListener('mousemove', handleGlobalMouseMove);
     document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+    document.addEventListener('touchend', handleGlobalTouchEnd);
 
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('touchmove', handleGlobalTouchMove);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
     };
   }, [isDragging, isDragModeEnabled, dragStart, initialPosition, exercise.slug, onDrag]);
 
@@ -195,14 +242,14 @@ export function SkillNode({
       
       {/* Icon */}
       <foreignObject
-        x={-16}
-        y={-16}
-        width={32}
-        height={32}
+        x={isMobile ? -12 : -16}
+        y={isMobile ? -12 : -16}
+        width={isMobile ? 24 : 32}
+        height={isMobile ? 24 : 32}
       >
         <div className="flex items-center justify-center w-full h-full">
           <IconComponent
-            size={UI_CONFIG.NODE_ICON_SIZE}
+            size={iconSize}
             style={{ color: isInProgress ? '#ffffff' : path.color }}
           />
         </div>
@@ -228,6 +275,8 @@ export function SkillNode({
         fill="transparent"
         onClick={handleClick}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       />
