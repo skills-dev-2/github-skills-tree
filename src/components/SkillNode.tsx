@@ -201,18 +201,7 @@ export function SkillNode({
         </div>
       </foreignObject>
       
-      {/* In-progress status indicator dot */}
-      {isInProgress && (
-        <circle
-          r={4}
-          cx={nodeRadius - 8}
-          cy={-nodeRadius + 8}
-          fill="#fbbf24"
-          stroke="#ffffff"
-          strokeWidth="1"
-          className="animate-pulse"
-        />
-      )}
+
       
       {/* Exercise name - only show on hover/selection when not in drag mode */}
       {!isDragModeEnabled && (isHighlighted || isSelected) && (
