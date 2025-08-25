@@ -193,15 +193,20 @@ export const GitHubAPI = {
   },
 
   /**
-   * Fetch issue reactions (cached for 60 minutes)
+   * Fetch issue information including reactions and comment count (cached for 60 minutes)
    */
-  async getIssueReactions(
+  async getIssueInfo(
     owner: string,
     repo: string,
     issueNumber: number
-  ): Promise<{ '+1': number; '-1': number }> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/reactions`;
-    const reactions = await cachedGithubApiFetch<any[]>(url, {}, 60);
+  ): Promise<{ '+1': number; '-1': number; comments: number }> {
+    // Fetch issue details to get comment count
+    const issueUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
+    const issueData = await cachedGithubApiFetch<any>(issueUrl, {}, 60);
+    
+    // Fetch reactions
+    const reactionsUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/reactions`;
+    const reactions = await cachedGithubApiFetch<any[]>(reactionsUrl, {}, 60);
     
     // Count reactions by type
     const reactionCounts = { '+1': 0, '-1': 0 };
@@ -213,8 +218,27 @@ export const GitHubAPI = {
       }
     });
     
-    console.log(`📊 Reaction counts for ${owner}/${repo}#${issueNumber}: 👍 ${reactionCounts['+1']}, 👎 ${reactionCounts['-1']}`);
-    return reactionCounts;
+    const result = {
+      '+1': reactionCounts['+1'],
+      '-1': reactionCounts['-1'],
+      comments: issueData.comments || 0
+    };
+    
+    console.log(`📊 Issue info for ${owner}/${repo}#${issueNumber}: 👍 ${result['+1']}, 👎 ${result['-1']}, 💬 ${result.comments} comments`);
+    return result;
+  },
+
+  /**
+   * Fetch issue reactions (cached for 60 minutes)
+   * @deprecated Use getIssueInfo instead for more complete data
+   */
+  async getIssueReactions(
+    owner: string,
+    repo: string,
+    issueNumber: number
+  ): Promise<{ '+1': number; '-1': number }> {
+    const info = await this.getIssueInfo(owner, repo, issueNumber);
+    return { '+1': info['+1'], '-1': info['-1'] };
   },
 
   /**

@@ -4,6 +4,7 @@ import { GitHubAPI } from '../lib/github-api';
 interface GitHubReactions {
   '+1': number;
   '-1': number;
+  comments: number;
   loading: boolean;
   error: string | null;
 }
@@ -42,10 +43,10 @@ function parseGitHubIssueUrl(issueUrl: string): IssueInfo | null {
 }
 
 /**
- * Fetch reaction counts for a GitHub issue using the centralized API wrapper
+ * Fetch reaction counts and comment count for a GitHub issue using the centralized API wrapper
  */
-async function fetchIssueReactions(owner: string, repo: string, issueNumber: number) {
-  return await GitHubAPI.getIssueReactions(owner, repo, issueNumber);
+async function fetchIssueInfo(owner: string, repo: string, issueNumber: number) {
+  return await GitHubAPI.getIssueInfo(owner, repo, issueNumber);
 }
 
 /**
@@ -55,6 +56,7 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
   const [reactions, setReactions] = useState<GitHubReactions>({
     '+1': 0,
     '-1': 0,
+    comments: 0,
     loading: false,
     error: null
   });
@@ -87,21 +89,22 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
       }));
 
       try {
-        console.log(`🔍 Fetching reactions for issue: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
-        const reactionCounts = await fetchIssueReactions(
+        console.log(`🔍 Fetching issue info for: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
+        const issueData = await fetchIssueInfo(
           issueInfo.owner, 
           issueInfo.repo, 
           issueInfo.issueNumber
         );
 
         setReactions({
-          '+1': reactionCounts['+1'],
-          '-1': reactionCounts['-1'],
+          '+1': issueData['+1'],
+          '-1': issueData['-1'],
+          comments: issueData.comments,
           loading: false,
           error: null
         });
         
-        console.log(`✅ Loaded reactions: 👍 ${reactionCounts['+1']}, 👎 ${reactionCounts['-1']}`);
+        console.log(`✅ Loaded issue info: 👍 ${issueData['+1']}, 👎 ${issueData['-1']}, 💬 ${issueData.comments} comments`);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reactions';
         console.error('❌ Error fetching GitHub reactions:', errorMessage);

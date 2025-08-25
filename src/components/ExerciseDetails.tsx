@@ -169,11 +169,11 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
         </p>
 
         <div className="space-y-3">
-          {/* GitHub Issue Reactions */}
+          {/* GitHub Issue Priority Information */}
           {exercise.issueUrl && (
             <div className="border border-border rounded-lg p-3 bg-muted/30">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium text-card-foreground">Community Feedback</h4>
+                <h4 className="text-sm font-medium text-card-foreground">Prioritize</h4>
                 {reactions.loading && (
                   <div className="w-4 h-4 border border-muted-foreground border-t-transparent rounded-full animate-spin" />
                 )}
@@ -184,23 +184,37 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
                   {reactions.error}
                 </p>
               ) : (
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Octicons.ThumbsupIcon size={14} className="text-green-400" />
-                    <span className="text-sm font-medium text-card-foreground">
-                      {reactions['+1']}
-                    </span>
-                    <span className="text-xs text-muted-foreground">helpful</span>
+                <>
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Octicons.ThumbsupIcon size={14} className="text-green-400" />
+                      <span className="text-sm font-medium text-card-foreground">
+                        {reactions['+1']}
+                      </span>
+                      <span className="text-xs text-muted-foreground">important</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5">
+                      <Octicons.ThumbsdownIcon size={14} className="text-red-400" />
+                      <span className="text-sm font-medium text-card-foreground">
+                        {reactions['-1']}
+                      </span>
+                      <span className="text-xs text-muted-foreground">not important</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Octicons.CommentIcon size={14} className="text-blue-400" />
+                      <span className="text-sm font-medium text-card-foreground">
+                        {reactions.comments}
+                      </span>
+                      <span className="text-xs text-muted-foreground">comments</span>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-1.5">
-                    <Octicons.ThumbsdownIcon size={14} className="text-red-400" />
-                    <span className="text-sm font-medium text-card-foreground">
-                      {reactions['-1']}
-                    </span>
-                    <span className="text-xs text-muted-foreground">needs work</span>
-                  </div>
-                </div>
+                  <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                    Reacting or commenting on the issue helps prioritize development on this exercise.
+                  </p>
+                </>
               )}
             </div>
           )}
