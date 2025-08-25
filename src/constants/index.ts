@@ -33,13 +33,11 @@ export const UI_CONFIG = {
   MIN_SVG_WIDTH_MOBILE: 800,
   MIN_SVG_HEIGHT_MOBILE: 600,
   
-  // Header and navigation
-  HEADER_HEIGHT: 81,
-  HEADER_HEIGHT_MOBILE: 65,
-  SEARCH_BAR_HEIGHT: 59,
-  SEARCH_BAR_HEIGHT_MOBILE: 51,
-  TOTAL_TOP_PADDING: 140, // HEADER_HEIGHT + SEARCH_BAR_HEIGHT
-  TOTAL_TOP_PADDING_MOBILE: 116, // HEADER_HEIGHT_MOBILE + SEARCH_BAR_HEIGHT_MOBILE
+  // Header and navigation - updated for combined header
+  COMBINED_HEADER_HEIGHT: 100,
+  COMBINED_HEADER_HEIGHT_MOBILE: 84,
+  TOTAL_TOP_PADDING: 100, // Combined header height
+  TOTAL_TOP_PADDING_MOBILE: 84, // Combined header height mobile
   
   // Animation durations (in ms)
   ANIMATION_FAST: 100,

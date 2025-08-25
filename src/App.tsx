@@ -42,33 +42,13 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
-        {/* Header with left alignment - mobile responsive */}
-        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur border-b border-border">
-          <div className="px-3 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
-                  GitHub Skills Roadmap
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
-                  Explore the learning paths for GitHub mastery
-                </p>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground ml-4">
-                <span className="hidden sm:inline">{exercises.length} exercises</span>
-                <span className="sm:hidden">{exercises.length}</span>
-                <span className="hidden sm:inline">{paths.length} learning paths</span>
-                <span className="sm:hidden">{paths.length}</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Skills Tree */}
-        <main className="relative" style={{ marginTop: '-1px' }}>
+        {/* Main Skills Tree - now taking full height */}
+        <main className="relative h-screen">
           <SkillsTree 
             exercises={exercises} 
-            paths={paths} 
+            paths={paths}
+            exerciseCount={exercises.length}
+            pathCount={paths.length}
           />
         </main>
 

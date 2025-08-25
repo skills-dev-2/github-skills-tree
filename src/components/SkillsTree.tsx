@@ -19,9 +19,11 @@ import type { SkillTreeNode } from '../lib/types';
 interface SkillsTreeProps {
   exercises: any[];
   paths: any[];
+  exerciseCount: number;
+  pathCount: number;
 }
 
-export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
+export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: SkillsTreeProps) {
   const { isMobile } = useResponsive();
   const [selectedNode, setSelectedNode] = useState<SkillTreeNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<SkillTreeNode | null>(null);
@@ -229,9 +231,29 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         />
       )}
 
-      {/* Search Bar with Filter Toggle - mobile responsive */}
+      {/* Combined Header with Search Bar - mobile responsive */}
       <div className="absolute right-0 top-0 left-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="px-3 sm:px-6 py-3">
+        <div className="px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            {/* Title Section */}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
+                GitHub Skills Roadmap
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
+                Explore the learning paths for GitHub mastery
+              </p>
+            </div>
+            {/* Stats Section */}
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground ml-4">
+              <span className="hidden sm:inline">{exerciseCount} exercises</span>
+              <span className="sm:hidden">{exerciseCount}</span>
+              <span className="hidden sm:inline">{pathCount} learning paths</span>
+              <span className="sm:hidden">{pathCount}</span>
+            </div>
+          </div>
+          
+          {/* Search and Filter Row */}
           <div className="flex items-center gap-2 sm:gap-3 sm:max-w-2xl sm:mx-auto">
             <Button
               variant="secondary"
@@ -255,7 +277,7 @@ export function SkillsTree({ exercises, paths }: SkillsTreeProps) {
         </div>
       </div>
 
-      {/* Main content area with top margin for search */}
+      {/* Main content area with top margin for combined header */}
       <div 
         ref={containerRef}
         className="h-full"
