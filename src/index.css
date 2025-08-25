@@ -136,3 +136,54 @@
     stroke-dashoffset: 0;
   }
 }
+
+/* Animated dashed border for in-progress status - marching ants effect */
+.animated-dashed-border {
+  border: none !important;
+  position: relative;
+  background: linear-gradient(to right, 
+    rgb(251 146 60 / 0.6) 50%, 
+    transparent 50%
+  ), 
+  linear-gradient(to bottom, 
+    rgb(251 146 60 / 0.6) 50%, 
+    transparent 50%
+  ),
+  linear-gradient(to right, 
+    rgb(251 146 60 / 0.6) 50%, 
+    transparent 50%
+  ), 
+  linear-gradient(to bottom, 
+    rgb(251 146 60 / 0.6) 50%, 
+    transparent 50%
+  );
+  background-position: 
+    0 0, 
+    100% 0, 
+    100% 100%, 
+    0 100%;
+  background-size: 
+    8px 1px, 
+    1px 8px, 
+    8px 1px, 
+    1px 8px;
+  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  animation: marching-ants 1s linear infinite;
+}
+
+@keyframes marching-ants {
+  0% {
+    background-position: 
+      0 0, 
+      100% 0, 
+      100% 100%, 
+      0 100%;
+  }
+  100% {
+    background-position: 
+      8px 0, 
+      100% 8px, 
+      calc(100% - 8px) 100%, 
+      0 calc(100% - 8px);
+  }
+}
