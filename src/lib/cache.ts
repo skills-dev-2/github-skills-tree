@@ -99,10 +99,20 @@ class MemoryCache {
 // Export singleton instance
 export const cache = new MemoryCache();
 
-// Cleanup expired entries every 30 minutes
+// Cleanup expired entries every 30 minutes and log the results
 setInterval(() => {
+  const statsBefore = cache.getStats();
   cache.cleanup();
-  console.log('Cache cleanup completed. Current stats:', cache.getStats());
+  const statsAfter = cache.getStats();
+  const cleaned = statsBefore.size - statsAfter.size;
+  
+  console.group('🧹 Cache Cleanup Completed');
+  console.log(`📊 Cleaned ${cleaned} expired entries`);
+  console.log(`📈 Current cache size: ${statsAfter.size} entries`);
+  console.log(`🔑 Active cache keys:`, statsAfter.keys.slice(0, 5).concat(
+    statsAfter.keys.length > 5 ? [`...and ${statsAfter.keys.length - 5} more`] : []
+  ));
+  console.groupEnd();
 }, 30 * 60 * 1000);
 
 /**
@@ -113,7 +123,7 @@ export function createCacheKey(...parts: (string | number)[]): string {
 }
 
 /**
- * Wrapper function for cached fetch operations
+ * Wrapper function for cached fetch operations with enhanced logging
  */
 export async function cachedFetch<T>(
   cacheKey: string,
@@ -123,19 +133,20 @@ export async function cachedFetch<T>(
   // Try to get from cache first
   const cached = cache.get<T>(cacheKey);
   if (cached !== null) {
-    console.log(`Cache hit for: ${cacheKey}`);
+    console.log(`📦 Cache HIT for: ${cacheKey} (TTL: ${ttlMinutes}min)`);
     return cached;
   }
 
   // Not in cache, fetch the data
-  console.log(`Cache miss for: ${cacheKey}, fetching...`);
+  console.log(`🔄 Cache MISS for: ${cacheKey}, fetching data...`);
   try {
     const result = await fetcher();
     cache.set(cacheKey, result, ttlMinutes);
+    console.log(`💾 Cached result for: ${cacheKey} (TTL: ${ttlMinutes}min)`);
     return result;
   } catch (error) {
-    // Don't cache errors, but log them
-    console.error(`Fetch failed for cache key: ${cacheKey}`, error);
+    // Don't cache errors, but log them with more detail
+    console.error(`❌ Fetch FAILED for cache key: ${cacheKey}`, error);
     throw error;
   }
 }

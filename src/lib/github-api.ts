@@ -1,0 +1,228 @@
+/**
+ * GitHub API wrapper with rate limit logging and caching
+ * 
+ * Provides centralized GitHub API access with automatic rate limit tracking,
+ * comprehensive logging, and caching to minimize API calls.
+ */
+
+import { cachedFetch, createCacheKey } from './cache';
+
+interface GitHubApiResponse<T = any> {
+  data: T;
+  rateLimitInfo: {
+    limit: number;
+    remaining: number;
+    reset: Date;
+    used: number;
+    resource: string;
+  };
+}
+
+interface RateLimitHeaders {
+  'x-ratelimit-limit': string;
+  'x-ratelimit-remaining': string;
+  'x-ratelimit-reset': string;
+  'x-ratelimit-used': string;
+  'x-ratelimit-resource': string;
+}
+
+/**
+ * Extract rate limit information from GitHub API response headers
+ */
+function extractRateLimitInfo(headers: Headers): GitHubApiResponse<any>['rateLimitInfo'] {
+  const limit = parseInt(headers.get('x-ratelimit-limit') || '5000', 10);
+  const remaining = parseInt(headers.get('x-ratelimit-remaining') || '0', 10);
+  const reset = new Date(parseInt(headers.get('x-ratelimit-reset') || '0', 10) * 1000);
+  const used = parseInt(headers.get('x-ratelimit-used') || '0', 10);
+  const resource = headers.get('x-ratelimit-resource') || 'core';
+
+  return {
+    limit,
+    remaining,
+    reset,
+    used,
+    resource
+  };
+}
+
+/**
+ * Log GitHub API rate limit information in a user-friendly format
+ */
+function logRateLimitInfo(url: string, rateLimitInfo: GitHubApiResponse<any>['rateLimitInfo'], fromCache = false): void {
+  const { limit, remaining, reset, used, resource } = rateLimitInfo;
+  
+  const resetTime = reset.toLocaleTimeString();
+  const usagePercentage = ((used / limit) * 100).toFixed(1);
+  const remainingPercentage = ((remaining / limit) * 100).toFixed(1);
+  
+  const source = fromCache ? '📦 [CACHED]' : '🌐 [API CALL]';
+  const urgency = remaining < 100 ? '🚨' : remaining < 500 ? '⚠️' : '✅';
+  
+  console.group(`${source} GitHub API Rate Limits ${urgency}`);
+  console.log(`🔗 URL: ${url}`);
+  console.log(`📊 Resource: ${resource}`);
+  console.log(`📈 Usage: ${used}/${limit} (${usagePercentage}%)`);
+  console.log(`⏳ Remaining: ${remaining} (${remainingPercentage}%)`);
+  console.log(`🔄 Resets at: ${resetTime}`);
+  
+  if (remaining < 100) {
+    console.warn('🚨 WARNING: Very low rate limit remaining!');
+    const minutesUntilReset = Math.ceil((reset.getTime() - Date.now()) / (1000 * 60));
+    console.warn(`⏰ Rate limit resets in ${minutesUntilReset} minutes`);
+  } else if (remaining < 500) {
+    console.warn('⚠️ CAUTION: Rate limit getting low');
+  }
+  
+  console.groupEnd();
+}
+
+/**
+ * Enhanced GitHub API fetch with rate limit logging and caching
+ */
+async function githubApiFetch<T>(
+  url: string, 
+  options: RequestInit = {},
+  ttlMinutes: number = 60
+): Promise<GitHubApiResponse<T>> {
+  const cacheKey = createCacheKey('github-api', url, JSON.stringify(options));
+  
+  return cachedFetch(cacheKey, async () => {
+    // Add GitHub-specific headers
+    const headers = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'GitHub-Skills-Tree',
+      ...options.headers
+    };
+
+    const response = await fetch(url, { ...options, headers });
+    
+    // Extract rate limit info before checking response status
+    const rateLimitInfo = extractRateLimitInfo(response.headers);
+    
+    // Log rate limit information
+    logRateLimitInfo(url, rateLimitInfo, false);
+    
+    if (!response.ok) {
+      if (response.status === 403) {
+        const resetTime = rateLimitInfo.reset.toLocaleString();
+        const minutesUntilReset = Math.ceil((rateLimitInfo.reset.getTime() - Date.now()) / (1000 * 60));
+        throw new Error(
+          `GitHub API rate limit exceeded! ` +
+          `Used: ${rateLimitInfo.used}/${rateLimitInfo.limit}. ` +
+          `Resets in ${minutesUntilReset} minutes (${resetTime}). ` +
+          `Please wait before making more requests.`
+        );
+      } else if (response.status === 404) {
+        throw new Error(`GitHub resource not found: ${url}`);
+      } else if (response.status === 401) {
+        throw new Error(`GitHub API authentication required. Please check your API token.`);
+      }
+      throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${url}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      data,
+      rateLimitInfo
+    };
+  }, ttlMinutes);
+}
+
+/**
+ * Cached GitHub API fetch that also logs rate limits for cached responses
+ */
+export async function cachedGithubApiFetch<T>(
+  url: string,
+  options: RequestInit = {},
+  ttlMinutes: number = 60
+): Promise<T> {
+  const cacheKey = createCacheKey('github-api', url, JSON.stringify(options));
+  
+  // Check if we have a cached response
+  const cached = await cachedFetch(cacheKey, async () => {
+    return githubApiFetch<T>(url, options, ttlMinutes);
+  }, ttlMinutes);
+  
+  // If this was a cache hit, log it with stored rate limit info
+  if (cached && typeof cached === 'object' && 'rateLimitInfo' in cached) {
+    const response = cached as GitHubApiResponse<T>;
+    logRateLimitInfo(url, response.rateLimitInfo, true);
+    return response.data;
+  }
+  
+  // If it wasn't cached or doesn't have rate limit info, fetch fresh
+  const response = await githubApiFetch<T>(url, options, ttlMinutes);
+  return response.data;
+}
+
+/**
+ * Specialized GitHub API functions for common operations
+ */
+export const GitHubAPI = {
+  /**
+   * Fetch repository contents (cached for 60 minutes)
+   */
+  async getRepoContents(
+    owner: string,
+    repo: string,
+    path: string = '',
+    branch: string = 'main'
+  ): Promise<any[]> {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
+    return cachedGithubApiFetch<any[]>(url, {}, 60);
+  },
+
+  /**
+   * Fetch file content from raw GitHub URL (cached for 60 minutes)
+   */
+  async getFileContent<T>(downloadUrl: string): Promise<T> {
+    // Raw GitHub URLs don't have rate limits, but we still cache them
+    const cacheKey = createCacheKey('github-file-content', downloadUrl);
+    
+    return cachedFetch(cacheKey, async () => {
+      console.log(`🔗 Fetching file content: ${downloadUrl}`);
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file content: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log(`✅ Successfully fetched file content from: ${downloadUrl}`);
+      return data;
+    }, 60);
+  },
+
+  /**
+   * Fetch issue reactions (cached for 60 minutes)
+   */
+  async getIssueReactions(
+    owner: string,
+    repo: string,
+    issueNumber: number
+  ): Promise<{ '+1': number; '-1': number }> {
+    const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/reactions`;
+    const reactions = await cachedGithubApiFetch<any[]>(url, {}, 60);
+    
+    // Count reactions by type
+    const reactionCounts = { '+1': 0, '-1': 0 };
+    reactions.forEach((reaction: any) => {
+      if (reaction.content === '+1') {
+        reactionCounts['+1']++;
+      } else if (reaction.content === '-1') {
+        reactionCounts['-1']++;
+      }
+    });
+    
+    console.log(`📊 Reaction counts for ${owner}/${repo}#${issueNumber}: 👍 ${reactionCounts['+1']}, 👎 ${reactionCounts['-1']}`);
+    return reactionCounts;
+  },
+
+  /**
+   * Get current rate limit status (not cached - always fresh)
+   */
+  async getRateLimit(): Promise<GitHubApiResponse<any>['rateLimitInfo']> {
+    const url = 'https://api.github.com/rate_limit';
+    const response = await githubApiFetch<any>(url, {}, 0); // Don't cache rate limit calls
+    return response.rateLimitInfo;
+  }
+};

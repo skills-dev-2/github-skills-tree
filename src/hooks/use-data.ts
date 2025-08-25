@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Exercise, Path } from '../lib/types';
-import { cachedFetch, createCacheKey } from '../lib/cache';
+import { GitHubAPI } from '../lib/github-api';
 import { GITHUB_CONFIG } from '../constants';
-
-const GITHUB_API_BASE = GITHUB_CONFIG.API_BASE;
 
 interface GitHubFile {
   name: string;
@@ -12,32 +10,24 @@ interface GitHubFile {
 }
 
 async function fetchGitHubFiles(path: string): Promise<GitHubFile[]> {
-  const cacheKey = createCacheKey('github-files', path);
-  
-  return cachedFetch(cacheKey, async () => {
-    const response = await fetch(`${GITHUB_API_BASE}/${path}?ref=${GITHUB_CONFIG.BRANCH}`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`GitHub repository or path not found: ${path}`);
-      } else if (response.status === 403) {
-        throw new Error('GitHub API rate limit exceeded. Please try again later.');
-      }
-      throw new Error(`Failed to fetch files from ${path}: ${response.status} ${response.statusText}`);
+  try {
+    // Parse the GitHub repository info from the API base URL
+    // Expected format: https://api.github.com/repos/owner/repo/contents
+    const match = GITHUB_CONFIG.API_BASE.match(/repos\/([^\/]+)\/([^\/]+)\/contents/);
+    if (!match) {
+      throw new Error('Invalid GitHub API base URL format');
     }
-    return response.json();
-  }, GITHUB_CONFIG.CACHE_TTL_MINUTES);
+    
+    const [, owner, repo] = match;
+    return await GitHubAPI.getRepoContents(owner, repo, path, GITHUB_CONFIG.BRANCH);
+  } catch (error) {
+    console.error(`Failed to fetch GitHub files from ${path}:`, error);
+    throw error;
+  }
 }
 
 async function fetchFileContent(downloadUrl: string) {
-  const cacheKey = createCacheKey('github-file-content', downloadUrl);
-  
-  return cachedFetch(cacheKey, async () => {
-    const response = await fetch(downloadUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file content: ${response.status} ${response.statusText}`);
-    }
-    return response.json();
-  }, GITHUB_CONFIG.CACHE_TTL_MINUTES);
+  return await GitHubAPI.getFileContent(downloadUrl);
 }
 
 async function fetchAllExercisesRecursively(basePath: string = 'exercises'): Promise<GitHubFile[]> {
@@ -99,9 +89,11 @@ export function useExercises() {
   useEffect(() => {
     async function loadExercises() {
       try {
-        console.log('Loading exercises with caching enabled...');
+        console.log('🚀 Loading exercises with enhanced caching and rate limit monitoring...');
         // Recursively get all exercise files from GitHub (including subfolders)
         const jsonFiles = await fetchAllExercisesRecursively('exercises');
+
+        console.log(`📁 Found ${jsonFiles.length} exercise files to process`);
 
         // Fetch content of each exercise file
         const exercisePromises = jsonFiles.map(async (file) => {
@@ -111,8 +103,9 @@ export function useExercises() {
 
         const loadedExercises = await Promise.all(exercisePromises);
         setExercises(loadedExercises);
-        console.log(`Successfully loaded ${loadedExercises.length} exercises`);
+        console.log(`✅ Successfully loaded ${loadedExercises.length} exercises`);
       } catch (err) {
+        console.error('❌ Failed to load exercises:', err);
         setError(err instanceof Error ? err.message : 'Failed to load exercises from GitHub');
       } finally {
         setLoading(false);
@@ -133,9 +126,11 @@ export function usePaths() {
   useEffect(() => {
     async function loadPaths() {
       try {
-        console.log('Loading paths with caching enabled...');
+        console.log('🚀 Loading paths with enhanced caching and rate limit monitoring...');
         // Recursively get all path files from GitHub (including subfolders)
         const jsonFiles = await fetchAllPathsRecursively('paths');
+
+        console.log(`📁 Found ${jsonFiles.length} path files to process`);
 
         // Fetch content of each path file
         const pathPromises = jsonFiles.map(async (file) => {
@@ -145,8 +140,9 @@ export function usePaths() {
 
         const loadedPaths = await Promise.all(pathPromises);
         setPaths(loadedPaths);
-        console.log(`Successfully loaded ${loadedPaths.length} paths`);
+        console.log(`✅ Successfully loaded ${loadedPaths.length} paths`);
       } catch (err) {
+        console.error('❌ Failed to load paths:', err);
         setError(err instanceof Error ? err.message : 'Failed to load paths from GitHub');
       } finally {
         setLoading(false);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { cachedFetch, createCacheKey } from '../lib/cache';
+import { GitHubAPI } from '../lib/github-api';
 
 interface GitHubReactions {
   '+1': number;
@@ -42,50 +42,10 @@ function parseGitHubIssueUrl(issueUrl: string): IssueInfo | null {
 }
 
 /**
- * Fetch reaction counts for a GitHub issue
+ * Fetch reaction counts for a GitHub issue using the centralized API wrapper
  */
 async function fetchIssueReactions(owner: string, repo: string, issueNumber: number) {
-  const cacheKey = createCacheKey('github-reactions', owner, repo, issueNumber);
-  
-  return cachedFetch(cacheKey, async () => {
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/reactions`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          // Add User-Agent to avoid rate limiting issues
-          'User-Agent': 'GitHub-Skills-Tree'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Issue not found');
-      } else if (response.status === 403) {
-        throw new Error('GitHub API rate limit exceeded');
-      }
-      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-    }
-
-    const reactions = await response.json();
-    
-    // Count reactions by type
-    const reactionCounts = {
-      '+1': 0,
-      '-1': 0
-    };
-    
-    reactions.forEach((reaction: any) => {
-      if (reaction.content === '+1') {
-        reactionCounts['+1']++;
-      } else if (reaction.content === '-1') {
-        reactionCounts['-1']++;
-      }
-    });
-    
-    return reactionCounts;
-  }, 60); // Cache for 60 minutes
+  return await GitHubAPI.getIssueReactions(owner, repo, issueNumber);
 }
 
 /**
@@ -127,7 +87,7 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
       }));
 
       try {
-        console.log(`Fetching reactions for issue: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
+        console.log(`🔍 Fetching reactions for issue: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
         const reactionCounts = await fetchIssueReactions(
           issueInfo.owner, 
           issueInfo.repo, 
@@ -140,9 +100,11 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
           loading: false,
           error: null
         });
+        
+        console.log(`✅ Loaded reactions: 👍 ${reactionCounts['+1']}, 👎 ${reactionCounts['-1']}`);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reactions';
-        console.error('Error fetching GitHub reactions:', errorMessage);
+        console.error('❌ Error fetching GitHub reactions:', errorMessage);
         setReactions(prev => ({
           ...prev,
           loading: false,

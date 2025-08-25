@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SkillsTree } from './components/SkillsTree';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useExercises, usePaths } from './hooks/use-data';
 import { Toaster } from './components/ui/sonner';
+import { initializeGitHubMonitoring } from './lib/github-debug';
 
 function App() {
   const { exercises, loading: exercisesLoading, error: exercisesError } = useExercises();
@@ -10,6 +11,11 @@ function App() {
 
   const loading = exercisesLoading || pathsLoading;
   const error = exercisesError || pathsError;
+
+  // Initialize GitHub API monitoring on app start
+  useEffect(() => {
+    initializeGitHubMonitoring();
+  }, []);
 
   if (loading) {
     return (
