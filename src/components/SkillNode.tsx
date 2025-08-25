@@ -73,8 +73,8 @@ export function SkillNode({
   const nodeRadius = isHighlighted || isSelected ? nodeRadiusHighlighted : nodeRadiusDefault;
   const ringRadius = nodeRadius + UI_CONFIG.NODE_RING_OFFSET;
   
-  // Check if exercise is in progress
-  const isInProgress = exercise.status === EXERCISE_STATUSES.IN_PROGRESS;
+  // Check if exercise is in development
+  const isDevelopment = exercise.status === EXERCISE_STATUSES.DEVELOPMENT;
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (isDragModeEnabled) {
@@ -171,17 +171,17 @@ export function SkillNode({
         cursor: isDragModeEnabled ? (isDragging ? 'grabbing' : 'grab') : 'pointer'
       }}
     >
-      {/* In-progress pulsing ring */}
-      {isInProgress && (
+      {/* Development pulsing ring */}
+      {isDevelopment && (
         <circle
           r={nodeRadius + 12}
           fill="none"
-          stroke={UI_CONFIG.IN_PROGRESS_COLOR}
+          stroke={UI_CONFIG.DEVELOPMENT_COLOR}
           strokeWidth="1"
           opacity="0.6"
           className="animate-pulse"
           style={{
-            filter: `drop-shadow(0 0 8px ${UI_CONFIG.IN_PROGRESS_COLOR})`,
+            filter: `drop-shadow(0 0 8px ${UI_CONFIG.DEVELOPMENT_COLOR})`,
           }}
         />
       )}
@@ -203,7 +203,7 @@ export function SkillNode({
       {/* Node background */}
       <circle
         r={nodeRadius}
-        fill={isInProgress ? UI_CONFIG.IN_PROGRESS_COLOR : "#21262d"}
+        fill={isDevelopment ? UI_CONFIG.DEVELOPMENT_COLOR : "#21262d"}
         stroke={path.color}
         strokeWidth="2"
         style={{
@@ -214,8 +214,8 @@ export function SkillNode({
         }}
       />
       
-      {/* In-progress progress indicator arc */}
-      {isInProgress && (
+      {/* Development progress indicator arc */}
+      {isDevelopment && (
         <>
           {/* Background arc */}
           <circle
@@ -250,7 +250,7 @@ export function SkillNode({
         <div className="flex items-center justify-center w-full h-full">
           <IconComponent
             size={iconSize}
-            style={{ color: isInProgress ? '#ffffff' : path.color }}
+            style={{ color: isDevelopment ? '#ffffff' : path.color }}
           />
         </div>
       </foreignObject>

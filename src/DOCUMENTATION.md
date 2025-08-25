@@ -31,9 +31,9 @@ Individual exercise node component with interactive states and visual feedback.
 
 **Features:**
 - Icon rendering using Octicons
-- Multiple visual states (default, highlighted, selected, in-progress)
+- Multiple visual states (default, highlighted, selected, development)
 - Drag and drop support when in drag mode
-- Progress indicators for in-progress exercises
+- Progress indicators for development exercises
 - Hover interactions and tooltips
 
 #### `FilterBar.tsx`

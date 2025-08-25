@@ -110,7 +110,7 @@
   }
 }
 
-/* In-progress status animations */
+/* Development status animations */
 @keyframes pulse-glow {
   0%, 100% {
     opacity: 0.6;
@@ -122,7 +122,7 @@
   }
 }
 
-.in-progress-ring {
+.development-ring {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
@@ -137,7 +137,7 @@
   }
 }
 
-/* Animated dashed border for in-progress status - marching ants effect */
+/* Animated dashed border for development status - marching ants effect */
 .animated-dashed-border {
   border: none !important;
   position: relative;

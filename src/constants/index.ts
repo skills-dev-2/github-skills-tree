@@ -48,7 +48,7 @@ export const UI_CONFIG = {
   
   // Progress animation
   PROGRESS_SPIN_DURATION: 15, // seconds
-  IN_PROGRESS_COLOR: '#f97316'
+  DEVELOPMENT_COLOR: '#f97316'
 } as const;
 
 // Filter defaults
@@ -61,7 +61,7 @@ export const EXERCISE_STATUSES = {
   ACTIVE: 'active',
   SCHEDULED: 'scheduled', 
   TENTATIVE: 'tentative',
-  IN_PROGRESS: 'in-progress'
+  DEVELOPMENT: 'development'
 } as const;
 
 // Difficulty levels
