@@ -7,6 +7,7 @@ import { Checkbox } from './ui/checkbox';
 import { Card } from './ui/card';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
+import { ApiUsageMonitor } from './ApiUsageMonitor';
 import { useResponsive } from '../hooks/use-responsive';
 import type { Exercise, Path } from '../lib/types';
 
@@ -19,6 +20,7 @@ export interface FilterState {
 
 export interface SettingsState {
   isDragModeEnabled: boolean;
+  showApiMonitor: boolean;
 }
 
 interface FilterBarProps {
@@ -79,6 +81,25 @@ function SettingsSection({ settings, onSettingsChange }: SettingsSectionProps) {
             <p className="text-xs text-muted-foreground">
               Drag mode: Tree panning disabled, click-to-view disabled, exercise icons can be repositioned.
             </p>
+          )}
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="api-monitor" className="text-sm text-foreground cursor-pointer">
+              Show API usage monitor
+            </Label>
+            <Switch
+              id="api-monitor"
+              checked={settings.showApiMonitor}
+              onCheckedChange={(checked) => 
+                onSettingsChange({ ...settings, showApiMonitor: checked })
+              }
+            />
+          </div>
+          
+          {settings.showApiMonitor && (
+            <div className="mt-3">
+              <ApiUsageMonitor />
+            </div>
           )}
         </div>
       )}

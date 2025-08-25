@@ -21,8 +21,8 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
   const { isMobile } = useResponsive();
   const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({});
   
-  // Fetch GitHub reactions if issue URL is available
-  const reactions = useGitHubReactions(exercise.issueUrl);
+  // Fetch GitHub reactions only when dialog is open (lazy loading)
+  const reactions = useGitHubReactions(exercise.issueUrl, isSelected);
 
   // Calculate safe position that keeps popup visible
   const calculatePosition = () => {

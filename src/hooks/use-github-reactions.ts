@@ -50,9 +50,10 @@ async function fetchIssueInfo(owner: string, repo: string, issueNumber: number) 
 }
 
 /**
- * Hook to fetch GitHub issue reactions
+ * Hook to fetch GitHub issue reactions with lazy loading
+ * Only fetches data when explicitly requested via the 'shouldFetch' parameter
  */
-export function useGitHubReactions(issueUrl?: string): GitHubReactions {
+export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = false): GitHubReactions {
   const [reactions, setReactions] = useState<GitHubReactions>({
     '+1': 0,
     '-1': 0,
@@ -62,10 +63,19 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
   });
 
   useEffect(() => {
-    // Reset state when URL changes
-    setReactions(prev => ({ ...prev, loading: false, error: null }));
+    // Reset state when URL changes or shouldFetch changes
+    if (!shouldFetch) {
+      setReactions({
+        '+1': 0,
+        '-1': 0,
+        comments: 0,
+        loading: false,
+        error: null
+      });
+      return;
+    }
     
-    // Don't fetch if no URL provided
+    // Don't fetch if no URL provided or shouldFetch is false
     if (!issueUrl) {
       return;
     }
@@ -80,7 +90,7 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
       return;
     }
 
-    // Fetch reactions
+    // Fetch reactions only when shouldFetch is true
     const fetchReactions = async () => {
       setReactions(prev => ({ 
         ...prev, 
@@ -89,7 +99,7 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
       }));
 
       try {
-        console.log(`🔍 Fetching issue info for: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
+        console.log(`🔍 [LAZY LOAD] Fetching issue info for: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
         const issueData = await fetchIssueInfo(
           issueInfo.owner, 
           issueInfo.repo, 
@@ -104,10 +114,10 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
           error: null
         });
         
-        console.log(`✅ Loaded issue info: 👍 ${issueData['+1']}, 👎 ${issueData['-1']}, 💬 ${issueData.comments} comments`);
+        console.log(`✅ [LAZY LOAD] Loaded issue info: 👍 ${issueData['+1']}, 👎 ${issueData['-1']}, 💬 ${issueData.comments} comments`);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reactions';
-        console.error('❌ Error fetching GitHub reactions:', errorMessage);
+        console.error('❌ [LAZY LOAD] Error fetching GitHub reactions:', errorMessage);
         setReactions(prev => ({
           ...prev,
           loading: false,
@@ -117,7 +127,7 @@ export function useGitHubReactions(issueUrl?: string): GitHubReactions {
     };
 
     fetchReactions();
-  }, [issueUrl]);
+  }, [issueUrl, shouldFetch]);
 
   return reactions;
 }

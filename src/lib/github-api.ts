@@ -6,6 +6,7 @@
  */
 
 import { cachedFetch, createCacheKey } from './cache';
+import { apiRequestQueue } from './request-queue';
 
 interface GitHubApiResponse<T = any> {
   data: T;
@@ -77,7 +78,7 @@ function logRateLimitInfo(url: string, rateLimitInfo: GitHubApiResponse<any>['ra
 }
 
 /**
- * Enhanced GitHub API fetch with rate limit logging and caching
+ * Enhanced GitHub API fetch with rate limit logging, caching, and request queuing
  */
 async function githubApiFetch<T>(
   url: string, 
@@ -87,45 +88,50 @@ async function githubApiFetch<T>(
   const cacheKey = createCacheKey('github-api', url, JSON.stringify(options));
   
   return cachedFetch(cacheKey, async () => {
-    // Add GitHub-specific headers
-    const headers = {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'GitHub-Skills-Tree',
-      ...options.headers
-    };
+    // Queue the actual API request to control rate
+    return apiRequestQueue.enqueue(async () => {
+      console.log(`🚦 [QUEUE] Processing GitHub API request: ${url}`);
+      
+      // Add GitHub-specific headers
+      const headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'GitHub-Skills-Tree',
+        ...options.headers
+      };
 
-    const response = await fetch(url, { ...options, headers });
-    
-    // Extract rate limit info before checking response status
-    const rateLimitInfo = extractRateLimitInfo(response.headers);
-    
-    // Log rate limit information
-    logRateLimitInfo(url, rateLimitInfo, false);
-    
-    if (!response.ok) {
-      if (response.status === 403) {
-        const resetTime = rateLimitInfo.reset.toLocaleString();
-        const minutesUntilReset = Math.ceil((rateLimitInfo.reset.getTime() - Date.now()) / (1000 * 60));
-        throw new Error(
-          `GitHub API rate limit exceeded! ` +
-          `Used: ${rateLimitInfo.used}/${rateLimitInfo.limit}. ` +
-          `Resets in ${minutesUntilReset} minutes (${resetTime}). ` +
-          `Please wait before making more requests.`
-        );
-      } else if (response.status === 404) {
-        throw new Error(`GitHub resource not found: ${url}`);
-      } else if (response.status === 401) {
-        throw new Error(`GitHub API authentication required. Please check your API token.`);
+      const response = await fetch(url, { ...options, headers });
+      
+      // Extract rate limit info before checking response status
+      const rateLimitInfo = extractRateLimitInfo(response.headers);
+      
+      // Log rate limit information
+      logRateLimitInfo(url, rateLimitInfo, false);
+      
+      if (!response.ok) {
+        if (response.status === 403) {
+          const resetTime = rateLimitInfo.reset.toLocaleString();
+          const minutesUntilReset = Math.ceil((rateLimitInfo.reset.getTime() - Date.now()) / (1000 * 60));
+          throw new Error(
+            `GitHub API rate limit exceeded! ` +
+            `Used: ${rateLimitInfo.used}/${rateLimitInfo.limit}. ` +
+            `Resets in ${minutesUntilReset} minutes (${resetTime}). ` +
+            `Please wait before making more requests.`
+          );
+        } else if (response.status === 404) {
+          throw new Error(`GitHub resource not found: ${url}`);
+        } else if (response.status === 401) {
+          throw new Error(`GitHub API authentication required. Please check your API token.`);
+        }
+        throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${url}`);
       }
-      throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${url}`);
-    }
 
-    const data = await response.json();
-    
-    return {
-      data,
-      rateLimitInfo
-    };
+      const data = await response.json();
+      
+      return {
+        data,
+        rateLimitInfo
+      };
+    });
   }, ttlMinutes);
 }
 
@@ -161,7 +167,7 @@ export async function cachedGithubApiFetch<T>(
  */
 export const GitHubAPI = {
   /**
-   * Fetch repository contents (cached for 60 minutes)
+   * Fetch repository contents (cached for 4 hours - static content changes rarely)
    */
   async getRepoContents(
     owner: string,
@@ -170,14 +176,14 @@ export const GitHubAPI = {
     branch: string = 'main'
   ): Promise<any[]> {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-    return cachedGithubApiFetch<any[]>(url, {}, 60);
+    return cachedGithubApiFetch<any[]>(url, {}, 240); // 4 hour cache
   },
 
   /**
-   * Fetch file content from raw GitHub URL (cached for 60 minutes)
+   * Fetch file content from raw GitHub URL (cached for 4 hours - static content)
    */
   async getFileContent<T>(downloadUrl: string): Promise<T> {
-    // Raw GitHub URLs don't have rate limits, but we still cache them
+    // Raw GitHub URLs don't have rate limits, but we still cache them aggressively
     const cacheKey = createCacheKey('github-file-content', downloadUrl);
     
     return cachedFetch(cacheKey, async () => {
@@ -189,11 +195,12 @@ export const GitHubAPI = {
       const data = await response.json();
       console.log(`✅ Successfully fetched file content from: ${downloadUrl}`);
       return data;
-    }, 60);
+    }, 240); // 4 hour cache for static files
   },
 
   /**
-   * Fetch issue information including reactions and comment count (cached for 60 minutes)
+   * Fetch issue information including reactions and comment count (cached for 30 minutes)
+   * Shorter cache time as this is dynamic data that changes more frequently
    */
   async getIssueInfo(
     owner: string,
@@ -202,11 +209,11 @@ export const GitHubAPI = {
   ): Promise<{ '+1': number; '-1': number; comments: number }> {
     // Fetch issue details to get comment count
     const issueUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
-    const issueData = await cachedGithubApiFetch<any>(issueUrl, {}, 60);
+    const issueData = await cachedGithubApiFetch<any>(issueUrl, {}, 30); // 30 min cache for dynamic data
     
     // Fetch reactions
     const reactionsUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/reactions`;
-    const reactions = await cachedGithubApiFetch<any[]>(reactionsUrl, {}, 60);
+    const reactions = await cachedGithubApiFetch<any[]>(reactionsUrl, {}, 30); // 30 min cache for dynamic data
     
     // Count reactions by type
     const reactionCounts = { '+1': 0, '-1': 0 };

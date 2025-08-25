@@ -35,7 +35,8 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
     statuses: FILTER_DEFAULTS.STATUSES as unknown as string[]
   });
   const [settings, setSettings] = useState<SettingsState>({
-    isDragModeEnabled: false
+    isDragModeEnabled: false,
+    showApiMonitor: false
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
