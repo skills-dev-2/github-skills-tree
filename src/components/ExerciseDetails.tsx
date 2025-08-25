@@ -169,6 +169,45 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
         </p>
 
         <div className="space-y-3">
+          {node.dependencies.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-card-foreground mb-1">Prerequisites</h4>
+              <div className="flex flex-wrap gap-1">
+                {node.dependencies.map(depSlug => (
+                  <Badge 
+                    key={depSlug} 
+                    variant="secondary"
+                    className="text-xs"
+                  >
+                    {depSlug}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {node.dependents.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-card-foreground mb-1">Unlocks</h4>
+              <div className="flex flex-wrap gap-1">
+                {node.dependents.slice(0, 3).map(depSlug => (
+                  <Badge 
+                    key={depSlug} 
+                    variant="outline" 
+                    className="text-xs"
+                  >
+                    {depSlug}
+                  </Badge>
+                ))}
+                {node.dependents.length > 3 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{node.dependents.length - 3} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* GitHub Issue Priority Information */}
           {exercise.issueUrl && (
             <div className="border border-border rounded-lg p-3 bg-muted/30">
@@ -216,45 +255,6 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
                   </p>
                 </>
               )}
-            </div>
-          )}
-
-          {node.dependencies.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-card-foreground mb-1">Prerequisites</h4>
-              <div className="flex flex-wrap gap-1">
-                {node.dependencies.map(depSlug => (
-                  <Badge 
-                    key={depSlug} 
-                    variant="secondary"
-                    className="text-xs"
-                  >
-                    {depSlug}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {node.dependents.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-card-foreground mb-1">Unlocks</h4>
-              <div className="flex flex-wrap gap-1">
-                {node.dependents.slice(0, 3).map(depSlug => (
-                  <Badge 
-                    key={depSlug} 
-                    variant="outline" 
-                    className="text-xs"
-                  >
-                    {depSlug}
-                  </Badge>
-                ))}
-                {node.dependents.length > 3 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{node.dependents.length - 3} more
-                  </Badge>
-                )}
-              </div>
             </div>
           )}
 
