@@ -191,7 +191,7 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
                       <span className="text-sm font-medium text-card-foreground">
                         {reactions['+1']}
                       </span>
-                      <span className="text-xs text-muted-foreground">important</span>
+                      <span className="text-xs text-muted-foreground"></span>
                     </div>
                     
                     <div className="flex items-center gap-1.5">
@@ -199,7 +199,7 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
                       <span className="text-sm font-medium text-card-foreground">
                         {reactions['-1']}
                       </span>
-                      <span className="text-xs text-muted-foreground">not important</span>
+                      <span className="text-xs text-muted-foreground"></span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -207,12 +207,12 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
                       <span className="text-sm font-medium text-card-foreground">
                         {reactions.comments}
                       </span>
-                      <span className="text-xs text-muted-foreground">comments</span>
+                      <span className="text-xs text-muted-foreground"></span>
                     </div>
                   </div>
                   
                   <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                    Reacting or commenting on the issue helps prioritize development on this exercise.
+                    Reacting or commenting on the issue helps the team prioritize development.
                   </p>
                 </>
               )}
