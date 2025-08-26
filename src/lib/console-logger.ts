@@ -40,8 +40,8 @@ class Logger implements ConsoleLogger {
   }
 
   private formatMessage(level: string, message: string): string {
-    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-    return `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+    // Simple format: [LEVEL] message - no timestamp for cleaner console
+    return `[${level.toUpperCase()}] ${message}`;
   }
 
   error(message: string, ...args: any[]): void {

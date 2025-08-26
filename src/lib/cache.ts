@@ -5,6 +5,8 @@
  * Automatically cleans up expired entries to prevent memory leaks.
  */
 
+import { logger } from './console-logger';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -106,13 +108,9 @@ setInterval(() => {
   const statsAfter = cache.getStats();
   const cleaned = statsBefore.size - statsAfter.size;
   
-  console.group('🧹 Cache Cleanup Completed');
-  console.log(`📊 Cleaned ${cleaned} expired entries`);
-  console.log(`📈 Current cache size: ${statsAfter.size} entries`);
-  console.log(`🔑 Active cache keys:`, statsAfter.keys.slice(0, 5).concat(
-    statsAfter.keys.length > 5 ? [`...and ${statsAfter.keys.length - 5} more`] : []
-  ));
-  console.groupEnd();
+  if (logger.getLevel() === 'debug') {
+    logger.debug(`Cache cleanup: ${cleaned} entries removed, ${statsAfter.size} entries remaining. Keys: ${statsAfter.keys.slice(0, 3).join(', ')}${statsAfter.keys.length > 3 ? `... +${statsAfter.keys.length - 3} more` : ''}`);
+  }
 }, 30 * 60 * 1000);
 
 /**
@@ -133,20 +131,20 @@ export async function cachedFetch<T>(
   // Try to get from cache first
   const cached = cache.get<T>(cacheKey);
   if (cached !== null) {
-    console.log(`📦 Cache HIT for: ${cacheKey} (TTL: ${ttlMinutes}min)`);
+    logger.debug(`Cache hit: ${cacheKey} (TTL: ${ttlMinutes}min)`);
     return cached;
   }
 
   // Not in cache, fetch the data
-  console.log(`🔄 Cache MISS for: ${cacheKey}, fetching data...`);
+  logger.debug(`Cache miss: ${cacheKey}, fetching data...`);
   try {
     const result = await fetcher();
     cache.set(cacheKey, result, ttlMinutes);
-    console.log(`💾 Cached result for: ${cacheKey} (TTL: ${ttlMinutes}min)`);
+    logger.debug(`Cached result: ${cacheKey} (TTL: ${ttlMinutes}min)`);
     return result;
   } catch (error) {
     // Don't cache errors, but log them with more detail
-    console.error(`❌ Fetch FAILED for cache key: ${cacheKey}`, error);
+    logger.error(`Fetch failed for cache key: ${cacheKey}`, error);
     throw error;
   }
 }

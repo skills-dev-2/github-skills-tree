@@ -7,6 +7,7 @@
 
 import { cachedFetch, createCacheKey } from './cache';
 import { apiRequestQueue } from './request-queue';
+import { logger } from './console-logger';
 
 interface GitHubApiResponse<T = any> {
   data: T;
@@ -56,25 +57,9 @@ function logRateLimitInfo(url: string, rateLimitInfo: GitHubApiResponse<any>['ra
   const usagePercentage = ((used / limit) * 100).toFixed(1);
   const remainingPercentage = ((remaining / limit) * 100).toFixed(1);
   
-  const source = fromCache ? '📦 [CACHED]' : '🌐 [API CALL]';
-  const urgency = remaining < 100 ? '🚨' : remaining < 500 ? '⚠️' : '✅';
+  const source = fromCache ? 'CACHED' : 'API CALL';
   
-  console.group(`${source} GitHub API Rate Limits ${urgency}`);
-  console.log(`🔗 URL: ${url}`);
-  console.log(`📊 Resource: ${resource}`);
-  console.log(`📈 Usage: ${used}/${limit} (${usagePercentage}%)`);
-  console.log(`⏳ Remaining: ${remaining} (${remainingPercentage}%)`);
-  console.log(`🔄 Resets at: ${resetTime}`);
-  
-  if (remaining < 100) {
-    console.warn('🚨 WARNING: Very low rate limit remaining!');
-    const minutesUntilReset = Math.ceil((reset.getTime() - Date.now()) / (1000 * 60));
-    console.warn(`⏰ Rate limit resets in ${minutesUntilReset} minutes`);
-  } else if (remaining < 500) {
-    console.warn('⚠️ CAUTION: Rate limit getting low');
-  }
-  
-  console.groupEnd();
+  logger.debug(`GitHub API [${source}] ${resource}: ${used}/${limit} used (${usagePercentage}%), ${remaining} remaining (${remainingPercentage}%), resets at ${resetTime} - ${url.split('/').slice(-2).join('/')}`);
 }
 
 /**
@@ -90,7 +75,7 @@ async function githubApiFetch<T>(
   return cachedFetch(cacheKey, async () => {
     // Queue the actual API request to control rate
     return apiRequestQueue.enqueue(async () => {
-      console.log(`🚦 [QUEUE] Processing GitHub API request: ${url}`);
+      logger.debug(`Processing queued GitHub API request: ${url}`);
       
       // Add GitHub-specific headers
       const headers = {
@@ -187,13 +172,13 @@ export const GitHubAPI = {
     const cacheKey = createCacheKey('github-file-content', downloadUrl);
     
     return cachedFetch(cacheKey, async () => {
-      console.log(`🔗 Fetching file content: ${downloadUrl}`);
+      logger.debug(`Fetching file content: ${downloadUrl.split('/').pop()}`);
       const response = await fetch(downloadUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch file content: ${response.status} ${response.statusText}`);
       }
       const data = await response.json();
-      console.log(`✅ Successfully fetched file content from: ${downloadUrl}`);
+      logger.debug(`File content fetched: ${downloadUrl.split('/').pop()}`);
       return data;
     }, 240); // 4 hour cache for static files
   },
@@ -231,7 +216,7 @@ export const GitHubAPI = {
       comments: issueData.comments || 0
     };
     
-    console.log(`📊 Issue info for ${owner}/${repo}#${issueNumber}: 👍 ${result['+1']}, 👎 ${result['-1']}, 💬 ${result.comments} comments`);
+    logger.info(`Issue info for ${owner}/${repo}#${issueNumber}: +1:${result['+1']}, -1:${result['-1']}, comments:${result.comments}`);
     return result;
   },
 
@@ -255,7 +240,7 @@ export const GitHubAPI = {
     const url = 'https://api.github.com/rate_limit';
     
     const response = await apiRequestQueue.enqueue(async () => {
-      console.log(`🚦 [QUEUE] Processing GitHub API request: ${url}`);
+      logger.debug(`Processing queued rate limit check: ${url}`);
       
       const headers = {
         'Accept': 'application/vnd.github.v3+json',
@@ -298,7 +283,7 @@ export const GitHubAPI = {
       }
       
       if (Object.keys(allLimits).length === 0) {
-        console.error('Unexpected rate limit response structure:', data);
+        logger.error('Unexpected rate limit response structure', data);
         throw new Error('Unable to parse rate limit response');
       }
       

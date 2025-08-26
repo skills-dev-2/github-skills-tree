@@ -3,6 +3,7 @@ import * as Octicons from '@primer/octicons-react';
 import type { SkillTreeNode } from '../lib/types';
 import { UI_CONFIG, EXERCISE_STATUSES } from '../constants';
 import { useResponsive } from '../hooks/use-responsive';
+import { logger } from '../lib/console-logger';
 
 interface SkillNodeProps {
   node: SkillTreeNode;
@@ -36,7 +37,7 @@ function getIconComponent(iconName: string): React.ComponentType<any> {
   }
   
   // Log warning and return fallback
-  console.warn(`Icon component "${iconName}" not found in Octicons. Using fallback MarkGithubIcon.`);
+  logger.warn(`Icon component "${iconName}" not found in Octicons, using fallback MarkGithubIcon`);
   return Octicons.MarkGithubIcon;
 }
 

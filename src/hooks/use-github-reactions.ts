@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GitHubAPI } from '../lib/github-api';
+import { logger } from '../lib/console-logger';
 
 interface GitHubReactions {
   '+1': number;
@@ -36,7 +37,7 @@ function parseGitHubIssueUrl(issueUrl: string): IssueInfo | null {
       };
     }
   } catch (error) {
-    console.warn('Invalid GitHub issue URL:', issueUrl, error);
+    logger.warn('Invalid GitHub issue URL', { issueUrl, error: error.message });
   }
   
   return null;
@@ -107,7 +108,7 @@ export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = fal
       }));
 
       try {
-        console.log(`🔍 [LAZY LOAD] Fetching issue info for: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
+        logger.debug(`Fetching issue info for: ${issueInfo.owner}/${issueInfo.repo}#${issueInfo.issueNumber}`);
         const issueData = await fetchIssueInfo(
           issueInfo.owner, 
           issueInfo.repo, 
@@ -122,10 +123,10 @@ export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = fal
           error: null
         });
         
-        console.log(`✅ [LAZY LOAD] Loaded issue info: 👍 ${issueData['+1']}, 👎 ${issueData['-1']}, 💬 ${issueData.comments} comments`);
+        logger.debug(`Loaded issue info: +1:${issueData['+1']}, -1:${issueData['-1']}, comments:${issueData.comments}`);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reactions';
-        console.error('❌ [LAZY LOAD] Error fetching GitHub reactions:', errorMessage);
+        logger.error('Error fetching GitHub reactions', errorMessage);
         setReactions(prev => ({
           ...prev,
           loading: false,
