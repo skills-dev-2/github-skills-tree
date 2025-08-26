@@ -19,6 +19,8 @@ import { useResponsive } from '../hooks/use-responsive';
 import { UI_CONFIG, FILTER_DEFAULTS } from '../constants';
 
 import type { SkillTreeNode } from '../lib/types';
+
+interface SkillsTreeProps {
   exercises: any[];
   paths: any[];
   exerciseCount: number;
