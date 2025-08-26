@@ -53,7 +53,9 @@ function extractRateLimitInfo(headers: Headers): GitHubApiResponse<any>['rateLim
 function logRateLimitInfo(url: string, rateLimitInfo: GitHubApiResponse<any>['rateLimitInfo'], fromCache = false): void {
   const { limit, remaining, reset, used, resource } = rateLimitInfo;
   
-  const resetTime = reset.toLocaleTimeString();
+  // Ensure reset is a Date object (could be a string from cache)
+  const resetDate = reset instanceof Date ? reset : new Date(reset);
+  const resetTime = resetDate.toLocaleTimeString();
   const usagePercentage = ((used / limit) * 100).toFixed(1);
   const remainingPercentage = ((remaining / limit) * 100).toFixed(1);
   
@@ -94,8 +96,10 @@ async function githubApiFetch<T>(
       
       if (!response.ok) {
         if (response.status === 403) {
-          const resetTime = rateLimitInfo.reset.toLocaleString();
-          const minutesUntilReset = Math.ceil((rateLimitInfo.reset.getTime() - Date.now()) / (1000 * 60));
+          // Ensure reset is a Date object
+          const resetDate = rateLimitInfo.reset instanceof Date ? rateLimitInfo.reset : new Date(rateLimitInfo.reset);
+          const resetTime = resetDate.toLocaleString();
+          const minutesUntilReset = Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60));
           throw new Error(
             `GitHub API rate limit exceeded! ` +
             `Used: ${rateLimitInfo.used}/${rateLimitInfo.limit}. ` +
@@ -121,6 +125,16 @@ async function githubApiFetch<T>(
 }
 
 /**
+ * Fix deserialized rate limit info from cache - ensures reset is a proper Date object
+ */
+function fixRateLimitInfo(rateLimitInfo: any): GitHubApiResponse<any>['rateLimitInfo'] {
+  return {
+    ...rateLimitInfo,
+    reset: rateLimitInfo.reset instanceof Date ? rateLimitInfo.reset : new Date(rateLimitInfo.reset)
+  };
+}
+
+/**
  * Cached GitHub API fetch that also logs rate limits for cached responses
  */
 export async function cachedGithubApiFetch<T>(
@@ -138,7 +152,9 @@ export async function cachedGithubApiFetch<T>(
   // If this was a cache hit, log it with stored rate limit info
   if (cached && typeof cached === 'object' && 'rateLimitInfo' in cached) {
     const response = cached as GitHubApiResponse<T>;
-    logRateLimitInfo(url, response.rateLimitInfo, true);
+    // Fix any deserialized Date objects from cache
+    const fixedRateLimitInfo = fixRateLimitInfo(response.rateLimitInfo);
+    logRateLimitInfo(url, fixedRateLimitInfo, true);
     return response.data;
   }
   
@@ -289,9 +305,10 @@ export const GitHubAPI = {
           throw new Error('Unable to parse rate limit response');
         }
         
-        // Log all rate limit information
+        // Log all rate limit information (fix any deserialized Dates for cached responses)
         Object.values(allLimits).forEach(rateLimitInfo => {
-          logRateLimitInfo(url, rateLimitInfo, false);
+          const fixedRateLimitInfo = fixRateLimitInfo(rateLimitInfo);
+          logRateLimitInfo(url, fixedRateLimitInfo, false);
         });
         
         return allLimits;

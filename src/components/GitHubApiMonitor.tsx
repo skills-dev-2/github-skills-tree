@@ -13,7 +13,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 interface RateLimitInfo {
   limit: number;
   remaining: number;
-  reset: Date;
+  reset: Date | string; // Can be Date object or string from cache
   used: number;
   resource: string;
 }
@@ -124,7 +124,7 @@ export function GitHubApiMonitor({ visible = false, autoRefresh = 0 }: GitHubApi
                       {info.remaining}/{info.limit}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      ({info.reset.toLocaleTimeString()})
+                      ({(info.reset instanceof Date ? info.reset : new Date(info.reset)).toLocaleTimeString()})
                     </span>
                   </div>
                 </div>

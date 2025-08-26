@@ -243,7 +243,7 @@ export function SettingsPanel({ settings, onSettingsChange, onClose }: SettingsP
                 {cacheStats.oldestEntry && (
                   <div className="flex justify-between">
                     <span>Oldest entry:</span>
-                    <span>{cacheStats.oldestEntry.toLocaleTimeString()}</span>
+                    <span>{(cacheStats.oldestEntry instanceof Date ? cacheStats.oldestEntry : new Date(cacheStats.oldestEntry)).toLocaleTimeString()}</span>
                   </div>
                 )}
               </div>

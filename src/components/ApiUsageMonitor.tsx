@@ -7,7 +7,7 @@ interface ApiUsageInfo {
   limit: number;
   remaining: number;
   used: number;
-  resetTime: Date;
+  resetTime: Date | string; // Can be Date object or string from cache
   resource: string;
 }
 
@@ -35,7 +35,7 @@ export function ApiUsageMonitor() {
           limit: rateLimitInfo.limit,
           remaining: rateLimitInfo.remaining,
           used: rateLimitInfo.used,
-          resetTime: rateLimitInfo.reset,
+          resetTime: rateLimitInfo.reset instanceof Date ? rateLimitInfo.reset : new Date(rateLimitInfo.reset),
           resource: rateLimitInfo.resource
         };
       });
@@ -59,8 +59,9 @@ export function ApiUsageMonitor() {
     return 'text-green-500';
   };
 
-  const formatTimeUntilReset = (resetTime: Date) => {
-    const minutes = Math.ceil((resetTime.getTime() - Date.now()) / (1000 * 60));
+  const formatTimeUntilReset = (resetTime: Date | string) => {
+    const resetDate = resetTime instanceof Date ? resetTime : new Date(resetTime);
+    const minutes = Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60));
     if (minutes < 60) return `${minutes}min`;
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;

@@ -38,10 +38,10 @@ export function logGitHubApiStats(): void {
   logDebug(`Cache storage: ${(cacheStats.totalSize / 1024).toFixed(1)}KB`);
   
   if (cacheStats.oldestEntry) {
-    logDebug(`Oldest entry: ${cacheStats.oldestEntry.toLocaleString()}`);
+    logDebug(`Oldest entry: ${(cacheStats.oldestEntry instanceof Date ? cacheStats.oldestEntry : new Date(cacheStats.oldestEntry)).toLocaleString()}`);
   }
   if (cacheStats.newestEntry) {
-    logDebug(`Newest entry: ${cacheStats.newestEntry.toLocaleString()}`);
+    logDebug(`Newest entry: ${(cacheStats.newestEntry instanceof Date ? cacheStats.newestEntry : new Date(cacheStats.newestEntry)).toLocaleString()}`);
   }
   
   const config = persistentCache.getConfig();
