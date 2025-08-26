@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X } from '@phosphor-icons/react';
+import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 
@@ -17,8 +17,8 @@ export function SearchBar({ searchTerm, onSearchChange, placeholder = "Search ex
   return (
     <div className="relative">
       <div className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-        <Search size={16} className="sm:hidden" />
-        <Search size={18} className="hidden sm:block" />
+        <MagnifyingGlass size={16} className="sm:hidden" />
+        <MagnifyingGlass size={18} className="hidden sm:block" />
       </div>
       <Input
         type="text"
