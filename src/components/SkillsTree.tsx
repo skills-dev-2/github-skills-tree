@@ -326,7 +326,7 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
             {/* Title Section - more compact and clickable */}
             <div className="min-w-0 flex-shrink-0">
               <h1 
-                className="text-base sm:text-xl font-bold text-foreground truncate cursor-pointer select-none hover:text-primary transition-colors"
+                className="text-base sm:text-xl font-bold text-foreground truncate select-none"
                 onClick={handleTitleClick}
                 title="Click 5 times quickly to toggle settings"
               >
