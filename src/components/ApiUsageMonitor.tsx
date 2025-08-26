@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { GitHubAPI } from '../lib/github-api';
 
@@ -53,17 +52,11 @@ export function ApiUsageMonitor() {
     fetchApiUsage();
   }, []);
 
-  const getUsageColor = (used: number, limit: number) => {
-    const usagePercent = (used / limit) * 100;
-    if (usagePercent > 80) return 'destructive';
-    if (usagePercent > 60) return 'secondary';
-    return 'default';
-  };
-
-  const getRemainingColor = (remaining: number) => {
-    if (remaining < 100) return 'destructive';
-    if (remaining < 500) return 'secondary';
-    return 'default';
+  const getRemainingColor = (remaining: number, limit: number) => {
+    const percentage = (remaining / limit) * 100;
+    if (percentage < 10) return 'text-red-500';
+    if (percentage < 25) return 'text-amber-500';
+    return 'text-green-500';
   };
 
   const formatTimeUntilReset = (resetTime: Date) => {
@@ -99,40 +92,22 @@ export function ApiUsageMonitor() {
     return priorities[resource] || 99;
   };
 
-  // Find the most critical resource (lowest remaining relative to limit)
-  const getMostCriticalResource = () => {
-    if (!apiInfo) return null;
-    
-    let mostCritical: { resource: string; info: ApiUsageInfo; percentage: number } | null = null;
-    
-    Object.entries(apiInfo).forEach(([resourceName, info]) => {
-      if (info.limit > 0) { // Only consider resources that have limits
-        const percentage = (info.remaining / info.limit) * 100;
-        if (!mostCritical || percentage < mostCritical.percentage) {
-          mostCritical = { resource: resourceName, info, percentage };
-        }
-      }
-    });
-    
-    return mostCritical;
-  };
-
   return (
     <Card className="w-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">GitHub API Usage</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">GitHub API Usage</CardTitle>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         {loading && (
-          <div className="flex items-center justify-center py-4">
-            <div className="w-4 h-4 border border-muted-foreground border-t-transparent rounded-full animate-spin" />
-            <span className="ml-2 text-sm text-muted-foreground">Checking usage...</span>
+          <div className="flex items-center justify-center py-2">
+            <div className="w-3 h-3 border border-muted-foreground border-t-transparent rounded-full animate-spin" />
+            <span className="ml-2 text-xs text-muted-foreground">Checking...</span>
           </div>
         )}
         
         {error && (
-          <div className="text-sm text-destructive p-3 bg-destructive/10 rounded-md">
+          <div className="text-xs text-destructive p-2 bg-destructive/10 rounded-md">
             {error}
           </div>
         )}
@@ -143,76 +118,34 @@ export function ApiUsageMonitor() {
               .filter(([, info]) => info.limit > 0) // Only show resources with actual limits
               .sort(([a], [b]) => getResourcePriority(a) - getResourcePriority(b))
               .map(([resourceName, info]) => (
-                <div key={resourceName} className="space-y-2 p-3 bg-muted/30 rounded-lg border">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-sm">{getResourceDisplayName(resourceName)}</h4>
-                    <Badge variant={getRemainingColor(info.remaining)}>
-                      {info.remaining}/{info.limit}
-                    </Badge>
+                <div key={resourceName} className="flex items-center justify-between py-1 text-xs">
+                  <span className="text-muted-foreground">{getResourceDisplayName(resourceName)}:</span>
+                  <div className="flex items-center space-x-2">
+                    <span 
+                      className={`font-mono font-medium ${getRemainingColor(info.remaining, info.limit)}`}
+                    >
+                      {info.remaining}
+                    </span>
+                    <span className="text-muted-foreground">/ {info.limit}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({formatTimeUntilReset(info.resetTime)})
+                    </span>
                   </div>
-                  
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Used:</span>
-                      <Badge variant={getUsageColor(info.used, info.limit)} className="text-xs">
-                        {info.used} ({Math.round((info.used / info.limit) * 100)}%)
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Resets in:</span>
-                      <span className="font-mono">
-                        {formatTimeUntilReset(info.resetTime)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Progress bar */}
-                  <div className="w-full bg-secondary rounded-full h-1.5 mt-2">
-                    <div 
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        info.remaining < info.limit * 0.1 ? 'bg-destructive' :
-                        info.remaining < info.limit * 0.25 ? 'bg-amber-500' : 'bg-primary'
-                      }`}
-                      style={{ width: `${(info.remaining / info.limit) * 100}%` }}
-                    />
-                  </div>
-                  
-                  {info.remaining < 100 && (
-                    <div className="p-2 bg-destructive/10 rounded-md mt-2">
-                      <p className="text-xs text-destructive font-medium">⚠️ Low API calls remaining!</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Consider waiting {formatTimeUntilReset(info.resetTime)} before making more requests.
-                      </p>
-                    </div>
-                  )}
                 </div>
               ))
             }
-            
-            {(() => {
-              const critical = getMostCriticalResource();
-              return critical && critical.percentage < 25 && (
-                <div className="p-3 bg-destructive/10 rounded-md border border-destructive/20">
-                  <p className="text-sm text-destructive font-medium">🚨 Critical: {getResourceDisplayName(critical.resource)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Only {critical.info.remaining} out of {critical.info.limit} calls remaining ({critical.percentage.toFixed(1)}%)
-                  </p>
-                </div>
-              );
-            })()}
           </>
         )}
         
-        <div className="pt-2">
+        <div className="pt-1">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={fetchApiUsage}
             disabled={loading}
-            className="w-full"
+            className="w-full h-7 text-xs"
           >
-            {loading ? 'Refreshing...' : 'Refresh Usage'}
+            {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
         </div>
       </CardContent>
