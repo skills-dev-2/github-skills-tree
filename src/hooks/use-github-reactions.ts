@@ -52,6 +52,7 @@ async function fetchIssueInfo(owner: string, repo: string, issueNumber: number) 
 /**
  * Hook to fetch GitHub issue reactions with lazy loading
  * Only fetches data when explicitly requested via the 'shouldFetch' parameter
+ * Preserves previously fetched data when shouldFetch becomes false
  */
 export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = false): GitHubReactions {
   const [reactions, setReactions] = useState<GitHubReactions>({
@@ -61,10 +62,12 @@ export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = fal
     loading: false,
     error: null
   });
+  
+  const [lastFetchedUrl, setLastFetchedUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // Reset state when URL changes or shouldFetch changes
-    if (!shouldFetch) {
+    // Reset state only when URL changes to a different URL
+    if (issueUrl !== lastFetchedUrl) {
       setReactions({
         '+1': 0,
         '-1': 0,
@@ -72,6 +75,11 @@ export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = fal
         loading: false,
         error: null
       });
+      setLastFetchedUrl(issueUrl || null);
+    }
+    
+    // If we shouldn't fetch, keep existing data
+    if (!shouldFetch || !issueUrl) {
       return;
     }
     
@@ -127,7 +135,7 @@ export function useGitHubReactions(issueUrl?: string, shouldFetch: boolean = fal
     };
 
     fetchReactions();
-  }, [issueUrl, shouldFetch]);
+  }, [issueUrl, shouldFetch, lastFetchedUrl]);
 
   return reactions;
 }
