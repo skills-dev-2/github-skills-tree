@@ -1,15 +1,17 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { SkillNode } from './SkillNode';
 import { SkillPath } from './SkillPath';
 import { ExerciseDetails } from './ExerciseDetails';
-import { FilterBar, type FilterState, type SettingsState } from './FilterBar';
+import { FilterBar, type FilterState } from './FilterBar';
+import { SettingsPanel, type SettingsState } from './SettingsPanel';
 import { SearchBar } from './SearchBar';
 import { Button } from './ui/button';
-import { Funnel } from '@phosphor-icons/react';
+import { Funnel, Gear } from '@phosphor-icons/react';
 import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
 import { nodesToObstacles } from '../lib/path-routing';
 import { calculateDraggedPositions, logDragOperation } from '../lib/drag-utils';
+import { logger } from '../lib/console-logger';
 import { useKV } from '@github/spark/hooks';
 import { useSvgDimensions, useArrowMarkers } from '../hooks/use-svg-utils';
 import { useResponsive } from '../hooks/use-responsive';
@@ -36,13 +38,26 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   });
   const [settings, setSettings] = useState<SettingsState>({
     isDragModeEnabled: false,
-    showApiMonitor: false
+    showApiMonitor: false,
+    consoleLogLevel: 'info'
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
 
   // Store custom node positions in persistent storage
   const [customPositions, setCustomPositions] = useKV("node-positions", {});
+
+  // Load stored settings and initialize logger
+  const [storedSettings] = useKV("app-settings", null);
+  
+  useEffect(() => {
+    if (storedSettings) {
+      const mergedSettings = { ...settings, ...storedSettings };
+      setSettings(mergedSettings);
+      logger.setLevel(mergedSettings.consoleLogLevel);
+    }
+  }, [storedSettings]);
 
   // Pan state for drag-to-move functionality (when not in drag mode)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -95,6 +110,9 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
 
   const handleSettingsChange = (newSettings: SettingsState) => {
     setSettings(newSettings);
+    
+    // Update logger level when console log level changes
+    logger.setLevel(newSettings.consoleLogLevel);
     
     // If drag mode is disabled, reset positions to original
     if (!newSettings.isDragModeEnabled) {
@@ -226,9 +244,16 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
           paths={paths}
           filters={filters}
           onFiltersChange={setFilters}
+          onClose={() => setIsFiltersVisible(false)}
+        />
+      )}
+
+      {/* Settings Panel - positioned on the right */}
+      {isSettingsVisible && (
+        <SettingsPanel
           settings={settings}
           onSettingsChange={handleSettingsChange}
-          onClose={() => setIsFiltersVisible(false)}
+          onClose={() => setIsSettingsVisible(false)}
         />
       )}
 
@@ -267,6 +292,18 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
             >
               <Funnel size={16} className="sm:hidden" />
               <Funnel size={20} className="hidden sm:block" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsSettingsVisible(!isSettingsVisible)}
+              className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-all ${
+                isSettingsVisible ? 'bg-primary text-primary-foreground' : ''
+              }`}
+              title="Toggle Settings"
+            >
+              <Gear size={16} className="sm:hidden" />
+              <Gear size={20} className="hidden sm:block" />
             </Button>
             <div className="flex-1">
               <SearchBar

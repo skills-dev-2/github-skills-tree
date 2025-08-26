@@ -6,25 +6,24 @@
 
 import { GitHubAPI } from './github-api';
 import { cache } from './cache';
+import { logInfo, logError, logDebug } from './console-logger';
 
 /**
  * Check current GitHub API rate limits and log them
  */
 export async function checkGitHubRateLimits(): Promise<void> {
   try {
-    console.group('🔍 GitHub API Rate Limit Check');
-    console.log('⏱️ Checking current rate limits...');
+    logDebug('🔍 GitHub API Rate Limit Check');
+    logDebug('⏱️ Checking current rate limits...');
     
     const rateLimitInfo = await GitHubAPI.getRateLimit();
     
-    console.log('✅ Rate limit check completed');
-    console.groupEnd();
+    logDebug('✅ Rate limit check completed');
     
   } catch (error) {
-    console.group('❌ GitHub API Rate Limit Check Failed');
-    console.error('Failed to check rate limits:', error);
-    console.log('💡 This might indicate connectivity issues or API problems');
-    console.groupEnd();
+    logError('❌ GitHub API Rate Limit Check Failed');
+    logError('Failed to check rate limits:', error);
+    logInfo('💡 This might indicate connectivity issues or API problems');
   }
 }
 
@@ -34,11 +33,11 @@ export async function checkGitHubRateLimits(): Promise<void> {
 export function logGitHubApiStats(): void {
   const cacheStats = cache.getStats();
   
-  console.group('📊 GitHub API & Cache Statistics');
+  logInfo('📊 GitHub API & Cache Statistics');
   
   // Cache information
-  console.log(`💾 Cache entries: ${cacheStats.size}`);
-  console.log(`🔑 Cache keys:`, cacheStats.keys);
+  logDebug(`💾 Cache entries: ${cacheStats.size}`);
+  logDebug(`🔑 Cache keys:`, cacheStats.keys);
   
   // Filter GitHub-related cache keys
   const githubKeys = cacheStats.keys.filter(key => 
@@ -47,26 +46,25 @@ export function logGitHubApiStats(): void {
     key.includes('github-reactions')
   );
   
-  console.log(`🐙 GitHub-related cache entries: ${githubKeys.length}`);
+  logDebug(`🐙 GitHub-related cache entries: ${githubKeys.length}`);
   if (githubKeys.length > 0) {
-    console.log(`🔗 GitHub cache keys:`, githubKeys);
+    logDebug(`🔗 GitHub cache keys:`, githubKeys);
   }
   
   // Memory usage estimation
   const estimatedMemoryKB = Math.round(
     JSON.stringify(cacheStats).length / 1024
   );
-  console.log(`🧠 Estimated cache memory usage: ~${estimatedMemoryKB}KB`);
+  logDebug(`🧠 Estimated cache memory usage: ~${estimatedMemoryKB}KB`);
   
-  console.log('💡 All GitHub API calls are cached for 60 minutes to minimize rate limit usage');
-  console.groupEnd();
+  logInfo('💡 All GitHub API calls are cached for 60 minutes to minimize rate limit usage');
 }
 
 /**
  * Initialize GitHub API monitoring and add debug utilities to window
  */
 export function initializeGitHubMonitoring(): void {
-  console.log('🚀 Initializing GitHub API monitoring...');
+  logInfo('🚀 Initializing GitHub API monitoring...');
   
   // Check rate limits on startup
   checkGitHubRateLimits();
@@ -82,11 +80,11 @@ export function initializeGitHubMonitoring(): void {
     logStats: logGitHubApiStats,
     clearCache: () => {
       cache.clear();
-      console.log('✅ Cache cleared successfully');
+      logInfo('✅ Cache cleared successfully');
     }
   };
   
   // Warning when approaching rate limits
-  console.log('⚠️  Monitoring active: Will warn if rate limits get low');
-  console.log('💡 Debug utilities available: window.gitHubDebug.checkRateLimits(), window.gitHubDebug.logStats(), window.gitHubDebug.clearCache()');
+  logInfo('⚠️  Monitoring active: Will warn if rate limits get low');
+  logInfo('💡 Debug utilities available: window.gitHubDebug.checkRateLimits(), window.gitHubDebug.logStats(), window.gitHubDebug.clearCache()');
 }

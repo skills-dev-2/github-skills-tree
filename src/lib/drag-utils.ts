@@ -1,4 +1,5 @@
 import type { SkillTreeNode } from './types';
+import { logDebug } from './console-logger';
 
 /**
  * Finds all transitive dependent nodes (nodes that depend on the target node)
@@ -87,7 +88,7 @@ export function logDragOperation(
   newPosition: { x: number; y: number },
   dependentNodes: SkillTreeNode[]
 ): void {
-  console.log(`Node ${draggedNode.exercise.name} moved by offset:`, {
+  logDebug(`Node ${draggedNode.exercise.name} moved by offset:`, {
     offsetX: offset.x,
     offsetY: offset.y,
     newPosition: newPosition,
