@@ -33,25 +33,28 @@ interface FilterBarProps {
 
 interface FilterSectionProps {
   title: string;
-  items: string[];
+  items: any[];
   selectedItems: string[];
   onSelectionChange: (items: string[]) => void;
-  renderItem?: (item: string) => React.ReactNode;
+  renderItem?: (item: any) => React.ReactNode;
+  getItemKey?: (item: any) => string;
 }
 
-function FilterSection({ title, items, selectedItems, onSelectionChange, renderItem }: FilterSectionProps) {
+function FilterSection({ title, items, selectedItems, onSelectionChange, renderItem, getItemKey }: FilterSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleItemToggle = (item: string, checked: boolean) => {
+  const handleItemToggle = (item: any, checked: boolean) => {
+    const itemKey = getItemKey ? getItemKey(item) : item;
     if (checked) {
-      onSelectionChange([...selectedItems, item]);
+      onSelectionChange([...selectedItems, itemKey]);
     } else {
-      onSelectionChange(selectedItems.filter(i => i !== item));
+      onSelectionChange(selectedItems.filter(i => i !== itemKey));
     }
   };
 
   const handleSelectAll = () => {
-    onSelectionChange(items);
+    const allKeys = items.map(item => getItemKey ? getItemKey(item) : item);
+    onSelectionChange(allKeys);
   };
 
   const handleClearAll = () => {
@@ -107,22 +110,26 @@ function FilterSection({ title, items, selectedItems, onSelectionChange, renderI
           )}
           
           <div className="space-y-2">
-            {items.map(item => (
-              <div key={item} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${title}-${item}`}
-                  checked={selectedItems.includes(item)}
-                  onCheckedChange={(checked) => handleItemToggle(item, !!checked)}
-                />
-                <label
-                  htmlFor={`${title}-${item}`}
-                  className="text-sm text-foreground cursor-pointer flex-1 truncate flex items-center gap-2"
-                  title={item}
-                >
-                  {renderItem ? renderItem(item) : item}
-                </label>
-              </div>
-            ))}
+            {items.map(item => {
+              const itemKey = getItemKey ? getItemKey(item) : item;
+              const displayKey = typeof item === 'string' ? item : itemKey;
+              return (
+                <div key={itemKey} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${title}-${itemKey}`}
+                    checked={selectedItems.includes(itemKey)}
+                    onCheckedChange={(checked) => handleItemToggle(item, !!checked)}
+                  />
+                  <label
+                    htmlFor={`${title}-${itemKey}`}
+                    className="text-sm text-foreground cursor-pointer flex-1 truncate flex items-center gap-2"
+                    title={displayKey}
+                  >
+                    {renderItem ? renderItem(item) : displayKey}
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -139,27 +146,37 @@ export function FilterBar({
 }: FilterBarProps) {
   const { isMobile, isDesktop } = useResponsive();
 
-  // Extract unique values from exercises
+  // Extract unique values dynamically from data
   const filterOptions = useMemo(() => {
-    const pathsSet = new Set<string>();
+    const pathSlugsSet = new Set<string>();
     const productsSet = new Set<string>();
     const difficultiesSet = new Set<string>();
     const statusesSet = new Set<string>();
 
+    // Extract unique values from exercises
     exercises.forEach(exercise => {
-      if (exercise.pathSlug) pathsSet.add(exercise.pathSlug);
+      if (exercise.pathSlug) pathSlugsSet.add(exercise.pathSlug);
       if (exercise.products) exercise.products.forEach(product => productsSet.add(product));
       if (exercise.difficulty) difficultiesSet.add(exercise.difficulty);
       if (exercise.status) statusesSet.add(exercise.status);
     });
 
+    // Convert path slugs to path names for display, but keep slugs for filtering
+    const pathOptions = Array.from(pathSlugsSet).sort().map(slug => {
+      const path = paths.find(p => p.slug === slug);
+      return {
+        slug,
+        name: path ? path.name : slug
+      };
+    });
+
     return {
-      paths: Array.from(pathsSet).sort(),
+      paths: pathOptions,
       products: Array.from(productsSet).sort(),
       difficulties: Array.from(difficultiesSet).sort(),
       statuses: Array.from(statusesSet).sort()
     };
-  }, [exercises]);
+  }, [exercises, paths]);
 
   // Create path color mapping for visual indicators
   const pathColorMap = useMemo(() => {
@@ -176,23 +193,21 @@ export function FilterBar({
     ];
     
     const map: Record<string, string> = {};
-    paths.forEach((path, index) => {
-      map[path.slug] = colors[index % colors.length];
+    filterOptions.paths.forEach((pathData, index) => {
+      map[pathData.slug] = colors[index % colors.length];
     });
     
     return map;
-  }, [paths]);
+  }, [filterOptions.paths]);
 
   // Enhanced path item renderer with colored indicators
-  const renderPathItem = (pathSlug: string) => {
-    const path = paths.find(p => p.slug === pathSlug);
-    const pathName = path ? path.name : pathSlug;
-    const colorClass = pathColorMap[pathSlug] || 'bg-gray-500';
+  const renderPathItem = (pathData: { slug: string; name: string }) => {
+    const colorClass = pathColorMap[pathData.slug] || 'bg-gray-500';
     
     return (
       <>
         <div className={`w-3 h-3 rounded-full ${colorClass} flex-shrink-0`} />
-        <span className="truncate">{pathName}</span>
+        <span className="truncate">{pathData.name}</span>
       </>
     );
   };
@@ -233,6 +248,7 @@ export function FilterBar({
           selectedItems={filters.paths}
           onSelectionChange={(paths) => onFiltersChange({ ...filters, paths })}
           renderItem={renderPathItem}
+          getItemKey={(pathData) => pathData.slug}
         />
         
         <FilterSection

@@ -81,7 +81,7 @@ export function calculateExerciseVisibility(
     activeFilters.push({
       category: 'path',
       values: filters.paths,
-      hasMatch: filters.paths.includes(path.name)
+      hasMatch: filters.paths.includes(path.slug) // Use path.slug instead of path.name
     });
   }
 
