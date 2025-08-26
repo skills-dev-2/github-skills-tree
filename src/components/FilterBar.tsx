@@ -8,6 +8,14 @@ import { Card } from './ui/card';
 import { useResponsive } from '../hooks/use-responsive';
 import type { Exercise, Path } from '../lib/types';
 
+/**
+ * Converts a status string to title case
+ * Examples: "active" -> "Active", "development" -> "Development"
+ */
+function toTitleCase(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 export interface FilterState {
   paths: string[];
   products: string[];
@@ -61,7 +69,7 @@ function FilterSection({ title, items, selectedItems, onSelectionChange, renderI
       >
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm text-foreground">{title}</span>
-          {selectedCount > 0 && selectedCount < totalCount && (
+          {selectedCount > 0 && (
             <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
               {selectedCount}
             </span>
@@ -189,6 +197,11 @@ export function FilterBar({
     );
   };
 
+  // Status item renderer with title case formatting
+  const renderStatusItem = (status: string) => {
+    return <span className="truncate">{toTitleCase(status)}</span>;
+  };
+
   return (
     <Card className={`
       fixed bg-card/95 backdrop-blur border-border shadow-2xl rounded-xl z-50
@@ -227,6 +240,7 @@ export function FilterBar({
           items={filterOptions.statuses}
           selectedItems={filters.statuses}
           onSelectionChange={(statuses) => onFiltersChange({ ...filters, statuses })}
+          renderItem={renderStatusItem}
         />
         
         <FilterSection

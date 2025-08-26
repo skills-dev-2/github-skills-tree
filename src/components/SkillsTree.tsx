@@ -36,7 +36,7 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
     paths: [],
     products: [],
     difficulties: [],
-    statuses: FILTER_DEFAULTS.STATUSES as unknown as string[]
+    statuses: [...FILTER_DEFAULTS.STATUSES]
   });
   const [settings, setSettings] = useState<SettingsState>({
     isDragModeEnabled: false,

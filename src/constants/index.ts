@@ -51,7 +51,7 @@ export const UI_CONFIG = {
 
 // Filter defaults
 export const FILTER_DEFAULTS = {
-  STATUSES: ['Active'] as const
+  STATUSES: ['active'] as const
 } as const;
 
 // Status values
