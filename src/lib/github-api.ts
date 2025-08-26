@@ -253,7 +253,49 @@ export const GitHubAPI = {
    */
   async getRateLimit(): Promise<GitHubApiResponse<any>['rateLimitInfo']> {
     const url = 'https://api.github.com/rate_limit';
-    const response = await githubApiFetch<any>(url, {}, 0); // Don't cache rate limit calls
-    return response.rateLimitInfo;
+    
+    // For the rate limit endpoint specifically, we need to handle the response differently
+    // as the rate limit data is in the JSON body, not just headers
+    const cacheKey = createCacheKey('github-api', url, '{}');
+    
+    const response = await apiRequestQueue.enqueue(async () => {
+      console.log(`🚦 [QUEUE] Processing GitHub API request: ${url}`);
+      
+      const headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'GitHub-Skills-Tree',
+      };
+
+      const apiResponse = await fetch(url, { headers });
+      
+      if (!apiResponse.ok) {
+        throw new Error(`GitHub API error: ${apiResponse.status} ${apiResponse.statusText} - ${url}`);
+      }
+
+      const data = await apiResponse.json();
+      
+      // For the rate limit endpoint, use the core resource data from the response body
+      const coreRateLimit = data.resources?.core || data.rate;
+      
+      if (!coreRateLimit) {
+        console.error('Unexpected rate limit response structure:', data);
+        throw new Error('Unable to parse rate limit response');
+      }
+      
+      const rateLimitInfo = {
+        limit: coreRateLimit.limit,
+        remaining: coreRateLimit.remaining,
+        reset: new Date(coreRateLimit.reset * 1000),
+        used: coreRateLimit.used || (coreRateLimit.limit - coreRateLimit.remaining),
+        resource: coreRateLimit.resource || 'core'
+      };
+      
+      // Log rate limit information
+      logRateLimitInfo(url, rateLimitInfo, false);
+      
+      return rateLimitInfo;
+    });
+    
+    return response;
   }
 };
