@@ -271,53 +271,53 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
         />
       )}
 
-      {/* Combined Header with Search Bar - mobile responsive */}
+      {/* Compact Header with integrated search and controls */}
       <div className="absolute right-0 top-0 left-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
-            {/* Title Section */}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
+        <div className="px-3 sm:px-6 py-2 sm:py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Title Section - more compact */}
+            <div className="min-w-0 flex-shrink-0">
+              <h1 className="text-base sm:text-xl font-bold text-foreground truncate">
                 GitHub Skills Roadmap
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
-                Explore the learning paths for GitHub mastery
-              </p>
             </div>
-          </div>
-          
-          {/* Search and Filter Row */}
-          <div className="flex items-center gap-2 sm:gap-3 sm:max-w-2xl sm:mx-auto">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-              className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-all ${
-                isFiltersVisible ? 'bg-primary text-primary-foreground' : ''
-              }`}
-              title="Toggle Filters"
-            >
-              <Funnel size={16} className="sm:hidden" />
-              <Funnel size={20} className="hidden sm:block" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsSettingsVisible(!isSettingsVisible)}
-              className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full shadow-lg hover:shadow-xl transition-all ${
-                isSettingsVisible ? 'bg-primary text-primary-foreground' : ''
-              }`}
-              title="Toggle Settings"
-            >
-              <Gear size={16} className="sm:hidden" />
-              <Gear size={20} className="hidden sm:block" />
-            </Button>
-            <div className="flex-1">
-              <SearchBar
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                placeholder={`${exerciseCount} exercises • ${pathCount} learning paths`}
-              />
+            
+            {/* Spacer for desktop */}
+            <div className="flex-1 hidden sm:block" />
+            
+            {/* Control buttons and search in single row */}
+            <div className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[400px] lg:min-w-[500px]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+                className={`w-8 h-8 sm:w-9 sm:h-9 p-0 rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0 ${
+                  isFiltersVisible ? 'bg-primary text-primary-foreground' : ''
+                }`}
+                title="Toggle Filters"
+              >
+                <Funnel size={16} className="sm:hidden" />
+                <Funnel size={18} className="hidden sm:block" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsSettingsVisible(!isSettingsVisible)}
+                className={`w-8 h-8 sm:w-9 sm:h-9 p-0 rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0 ${
+                  isSettingsVisible ? 'bg-primary text-primary-foreground' : ''
+                }`}
+                title="Toggle Settings"
+              >
+                <Gear size={16} className="sm:hidden" />
+                <Gear size={18} className="hidden sm:block" />
+              </Button>
+              <div className="flex-1">
+                <SearchBar
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  placeholder={`${exerciseCount} exercises • ${pathCount} learning paths`}
+                />
+              </div>
             </div>
           </div>
         </div>
