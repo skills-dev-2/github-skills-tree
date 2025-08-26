@@ -284,13 +284,6 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
                 Explore the learning paths for GitHub mastery
               </p>
             </div>
-            {/* Stats Section */}
-            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground ml-4">
-              <span className="hidden sm:inline">{exerciseCount} exercises</span>
-              <span className="sm:hidden">{exerciseCount}</span>
-              <span className="hidden sm:inline">{pathCount} learning paths</span>
-              <span className="sm:hidden">{pathCount}</span>
-            </div>
           </div>
           
           {/* Search and Filter Row */}
@@ -323,6 +316,7 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
               <SearchBar
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+                placeholder={`${exerciseCount} exercises • ${pathCount} learning paths`}
               />
             </div>
           </div>

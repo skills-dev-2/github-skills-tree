@@ -6,9 +6,10 @@ import { Button } from './ui/button';
 interface SearchBarProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  placeholder?: string;
 }
 
-export function SearchBar({ searchTerm, onSearchChange }: SearchBarProps) {
+export function SearchBar({ searchTerm, onSearchChange, placeholder = "Search exercises..." }: SearchBarProps) {
   const handleClear = () => {
     onSearchChange('');
   };
@@ -21,7 +22,7 @@ export function SearchBar({ searchTerm, onSearchChange }: SearchBarProps) {
       </div>
       <Input
         type="text"
-        placeholder="Search exercises..."
+        placeholder={placeholder}
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}
         className="pl-8 sm:pl-10 pr-8 sm:pr-10 text-sm bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
