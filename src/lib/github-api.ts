@@ -5,7 +5,7 @@
  * comprehensive logging, and caching to minimize API calls.
  */
 
-import { cachedFetch, createCacheKey } from './cache';
+import { cachedPersistentFetch, createCacheKey, persistentCache } from './persistent-cache';
 import { apiRequestQueue } from './request-queue';
 import { logger } from './console-logger';
 
@@ -68,11 +68,11 @@ function logRateLimitInfo(url: string, rateLimitInfo: GitHubApiResponse<any>['ra
 async function githubApiFetch<T>(
   url: string, 
   options: RequestInit = {},
-  ttlMinutes: number = 60
+  dataType: 'exercises' | 'reactions' | 'rateLimits' | 'general' = 'general'
 ): Promise<GitHubApiResponse<T>> {
   const cacheKey = createCacheKey('github-api', url, JSON.stringify(options));
   
-  return cachedFetch(cacheKey, async () => {
+  return cachedPersistentFetch(cacheKey, async () => {
     // Queue the actual API request to control rate
     return apiRequestQueue.enqueue(async () => {
       logger.debug(`Processing queued GitHub API request: ${url}`);
@@ -117,7 +117,7 @@ async function githubApiFetch<T>(
         rateLimitInfo
       };
     });
-  }, ttlMinutes);
+  }, dataType);
 }
 
 /**
@@ -126,14 +126,14 @@ async function githubApiFetch<T>(
 export async function cachedGithubApiFetch<T>(
   url: string,
   options: RequestInit = {},
-  ttlMinutes: number = 60
+  dataType: 'exercises' | 'reactions' | 'rateLimits' | 'general' = 'general'
 ): Promise<T> {
   const cacheKey = createCacheKey('github-api', url, JSON.stringify(options));
   
   // Check if we have a cached response
-  const cached = await cachedFetch(cacheKey, async () => {
-    return githubApiFetch<T>(url, options, ttlMinutes);
-  }, ttlMinutes);
+  const cached = await cachedPersistentFetch(cacheKey, async () => {
+    return githubApiFetch<T>(url, options, dataType);
+  }, dataType);
   
   // If this was a cache hit, log it with stored rate limit info
   if (cached && typeof cached === 'object' && 'rateLimitInfo' in cached) {
@@ -143,7 +143,7 @@ export async function cachedGithubApiFetch<T>(
   }
   
   // If it wasn't cached or doesn't have rate limit info, fetch fresh
-  const response = await githubApiFetch<T>(url, options, ttlMinutes);
+  const response = await githubApiFetch<T>(url, options, dataType);
   return response.data;
 }
 
@@ -152,7 +152,7 @@ export async function cachedGithubApiFetch<T>(
  */
 export const GitHubAPI = {
   /**
-   * Fetch repository contents (cached for 4 hours - static content changes rarely)
+   * Fetch repository contents (cached for configurable hours - static content changes rarely)
    */
   async getRepoContents(
     owner: string,
@@ -161,17 +161,17 @@ export const GitHubAPI = {
     branch: string = 'main'
   ): Promise<any[]> {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-    return cachedGithubApiFetch<any[]>(url, {}, 240); // 4 hour cache
+    return cachedGithubApiFetch<any[]>(url, {}, 'exercises');
   },
 
   /**
-   * Fetch file content from raw GitHub URL (cached for 4 hours - static content)
+   * Fetch file content from raw GitHub URL (cached for configurable hours - static content)
    */
   async getFileContent<T>(downloadUrl: string): Promise<T> {
     // Raw GitHub URLs don't have rate limits, but we still cache them aggressively
     const cacheKey = createCacheKey('github-file-content', downloadUrl);
     
-    return cachedFetch(cacheKey, async () => {
+    return cachedPersistentFetch(cacheKey, async () => {
       logger.debug(`Fetching file content: ${downloadUrl.split('/').pop()}`);
       const response = await fetch(downloadUrl);
       if (!response.ok) {
@@ -180,11 +180,11 @@ export const GitHubAPI = {
       const data = await response.json();
       logger.debug(`File content fetched: ${downloadUrl.split('/').pop()}`);
       return data;
-    }, 240); // 4 hour cache for static files
+    }, 'exercises'); // Use exercises cache time for static files
   },
 
   /**
-   * Fetch issue information including reactions and comment count (cached for 30 minutes)
+   * Fetch issue information including reactions and comment count (cached for configurable minutes)
    * Shorter cache time as this is dynamic data that changes more frequently
    */
   async getIssueInfo(
@@ -194,11 +194,11 @@ export const GitHubAPI = {
   ): Promise<{ '+1': number; '-1': number; comments: number }> {
     // Fetch issue details to get comment count
     const issueUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
-    const issueData = await cachedGithubApiFetch<any>(issueUrl, {}, 30); // 30 min cache for dynamic data
+    const issueData = await cachedGithubApiFetch<any>(issueUrl, {}, 'reactions');
     
     // Fetch reactions
     const reactionsUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/reactions`;
-    const reactions = await cachedGithubApiFetch<any[]>(reactionsUrl, {}, 30); // 30 min cache for dynamic data
+    const reactions = await cachedGithubApiFetch<any[]>(reactionsUrl, {}, 'reactions');
     
     // Count reactions by type
     const reactionCounts = { '+1': 0, '-1': 0 };
@@ -221,7 +221,7 @@ export const GitHubAPI = {
   },
 
   /**
-   * Fetch issue reactions (cached for 60 minutes)
+   * Fetch issue reactions (cached for configurable minutes)
    * @deprecated Use getIssueInfo instead for more complete data
    */
   async getIssueReactions(
@@ -234,67 +234,70 @@ export const GitHubAPI = {
   },
 
   /**
-   * Get current rate limit status for all resources (not cached - always fresh)
+   * Get current rate limit status for all resources (cached briefly to avoid excessive calls)
    */
   async getRateLimit(): Promise<{ [resource: string]: GitHubApiResponse<any>['rateLimitInfo'] }> {
     const url = 'https://api.github.com/rate_limit';
+    const cacheKey = createCacheKey('rate-limit-status');
     
-    const response = await apiRequestQueue.enqueue(async () => {
-      logger.debug(`Processing queued rate limit check: ${url}`);
-      
-      const headers = {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'GitHub-Skills-Tree',
-      };
-
-      const apiResponse = await fetch(url, { headers });
-      
-      if (!apiResponse.ok) {
-        throw new Error(`GitHub API error: ${apiResponse.status} ${apiResponse.statusText} - ${url}`);
-      }
-
-      const data = await apiResponse.json();
-      
-      // Parse all resource types from the response
-      const allLimits: { [resource: string]: GitHubApiResponse<any>['rateLimitInfo'] } = {};
-      
-      if (data.resources) {
-        // Process all resource types
-        Object.entries(data.resources).forEach(([resourceName, resourceData]: [string, any]) => {
-          allLimits[resourceName] = {
-            limit: resourceData.limit,
-            remaining: resourceData.remaining,
-            reset: new Date(resourceData.reset * 1000),
-            used: resourceData.used || (resourceData.limit - resourceData.remaining),
-            resource: resourceName
-          };
-        });
-      }
-      
-      // Also include the legacy "rate" object if it exists (typically contains core data)
-      if (data.rate) {
-        allLimits['rate'] = {
-          limit: data.rate.limit,
-          remaining: data.rate.remaining,
-          reset: new Date(data.rate.reset * 1000),
-          used: data.rate.used || (data.rate.limit - data.rate.remaining),
-          resource: data.rate.resource || 'core'
+    return cachedPersistentFetch(cacheKey, async () => {
+      const response = await apiRequestQueue.enqueue(async () => {
+        logger.debug(`Processing queued rate limit check: ${url}`);
+        
+        const headers = {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'GitHub-Skills-Tree',
         };
-      }
-      
-      if (Object.keys(allLimits).length === 0) {
-        logger.error('Unexpected rate limit response structure', data);
-        throw new Error('Unable to parse rate limit response');
-      }
-      
-      // Log all rate limit information
-      Object.values(allLimits).forEach(rateLimitInfo => {
-        logRateLimitInfo(url, rateLimitInfo, false);
+
+        const apiResponse = await fetch(url, { headers });
+        
+        if (!apiResponse.ok) {
+          throw new Error(`GitHub API error: ${apiResponse.status} ${apiResponse.statusText} - ${url}`);
+        }
+
+        const data = await apiResponse.json();
+        
+        // Parse all resource types from the response
+        const allLimits: { [resource: string]: GitHubApiResponse<any>['rateLimitInfo'] } = {};
+        
+        if (data.resources) {
+          // Process all resource types
+          Object.entries(data.resources).forEach(([resourceName, resourceData]: [string, any]) => {
+            allLimits[resourceName] = {
+              limit: resourceData.limit,
+              remaining: resourceData.remaining,
+              reset: new Date(resourceData.reset * 1000),
+              used: resourceData.used || (resourceData.limit - resourceData.remaining),
+              resource: resourceName
+            };
+          });
+        }
+        
+        // Also include the legacy "rate" object if it exists (typically contains core data)
+        if (data.rate) {
+          allLimits['rate'] = {
+            limit: data.rate.limit,
+            remaining: data.rate.remaining,
+            reset: new Date(data.rate.reset * 1000),
+            used: data.rate.used || (data.rate.limit - data.rate.remaining),
+            resource: data.rate.resource || 'core'
+          };
+        }
+        
+        if (Object.keys(allLimits).length === 0) {
+          logger.error('Unexpected rate limit response structure', data);
+          throw new Error('Unable to parse rate limit response');
+        }
+        
+        // Log all rate limit information
+        Object.values(allLimits).forEach(rateLimitInfo => {
+          logRateLimitInfo(url, rateLimitInfo, false);
+        });
+        
+        return allLimits;
       });
       
-      return allLimits;
-    });
-    
-    return response;
+      return response;
+    }, 'rateLimits');
   }
 };

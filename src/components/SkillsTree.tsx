@@ -11,14 +11,14 @@ import { createSkillTreeData } from '../lib/skill-tree-data';
 import { applyVisibilityToNodes } from '../lib/filter-utils';
 import { nodesToObstacles } from '../lib/path-routing';
 import { calculateDraggedPositions, logDragOperation } from '../lib/drag-utils';
-import { logger } from '../lib/console-logger';
 import { useKV } from '@github/spark/hooks';
+import { DEFAULT_CACHE_CONFIG, persistentCache } from '../lib/persistent-cache';
+import { logger } from '../lib/console-logger';
 import { useSvgDimensions, useArrowMarkers } from '../hooks/use-svg-utils';
 import { useResponsive } from '../hooks/use-responsive';
 import { UI_CONFIG, FILTER_DEFAULTS } from '../constants';
-import type { SkillTreeNode } from '../lib/types';
 
-interface SkillsTreeProps {
+import type { SkillTreeNode } from '../lib/types';
   exercises: any[];
   paths: any[];
   exerciseCount: number;
@@ -39,7 +39,8 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   const [settings, setSettings] = useState<SettingsState>({
     isDragModeEnabled: false,
     showApiMonitor: false,
-    consoleLogLevel: 'info'
+    consoleLogLevel: 'info',
+    cacheConfig: { ...DEFAULT_CACHE_CONFIG }
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
@@ -53,9 +54,20 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   
   useEffect(() => {
     if (storedSettings) {
-      const mergedSettings = { ...settings, ...storedSettings };
+      const mergedSettings = { 
+        ...settings, 
+        ...storedSettings,
+        cacheConfig: { ...DEFAULT_CACHE_CONFIG, ...(storedSettings.cacheConfig || {}) }
+      };
       setSettings(mergedSettings);
       logger.setLevel(mergedSettings.consoleLogLevel);
+      
+      // Initialize persistent cache configuration
+      persistentCache.updateConfig(mergedSettings.cacheConfig);
+    } else {
+      // Initialize with defaults if no stored settings
+      logger.setLevel(settings.consoleLogLevel);
+      persistentCache.updateConfig(settings.cacheConfig);
     }
   }, [storedSettings]);
 

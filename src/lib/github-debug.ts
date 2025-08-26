@@ -5,7 +5,7 @@
  */
 
 import { GitHubAPI } from './github-api';
-import { cache } from './cache';
+import { persistentCache } from './persistent-cache';
 import { logInfo, logError, logDebug } from './console-logger';
 
 /**
@@ -29,32 +29,25 @@ export async function checkGitHubRateLimits(): Promise<void> {
  * Log comprehensive GitHub API and cache statistics
  */
 export function logGitHubApiStats(): void {
-  const cacheStats = cache.getStats();
+  const cacheStats = persistentCache.getStats();
   
   logInfo('GitHub API & Cache Statistics');
   
   // Cache information
-  logDebug(`Cache entries: ${cacheStats.size}`);
-  if (logDebug && cacheStats.keys.length > 0) {
-    logDebug(`Cache keys: ${cacheStats.keys.slice(0, 3).join(', ')}${cacheStats.keys.length > 3 ? ` ...+${cacheStats.keys.length - 3} more` : ''}`);
+  logDebug(`Cache entries: ${cacheStats.entryCount}`);
+  logDebug(`Cache storage: ${(cacheStats.totalSize / 1024).toFixed(1)}KB`);
+  
+  if (cacheStats.oldestEntry) {
+    logDebug(`Oldest entry: ${cacheStats.oldestEntry.toLocaleString()}`);
+  }
+  if (cacheStats.newestEntry) {
+    logDebug(`Newest entry: ${cacheStats.newestEntry.toLocaleString()}`);
   }
   
-  // Filter GitHub-related cache keys
-  const githubKeys = cacheStats.keys.filter(key => 
-    key.includes('github-api') || 
-    key.includes('github-files') || 
-    key.includes('github-reactions')
-  );
+  const config = persistentCache.getConfig();
+  logDebug(`Cache TTL: Exercises ${config.exerciseTtlHours}h, Reactions ${config.reactionsTtlMinutes}m, Rate limits ${config.rateLimitTtlMinutes}m, General ${config.generalTtlMinutes}m`);
   
-  logDebug(`GitHub-related cache entries: ${githubKeys.length}`);
-  
-  // Memory usage estimation
-  const estimatedMemoryKB = Math.round(
-    JSON.stringify(cacheStats).length / 1024
-  );
-  logDebug(`Estimated cache memory usage: ~${estimatedMemoryKB}KB`);
-  
-  logInfo('All GitHub API calls are cached for 60 minutes to minimize rate limit usage');
+  logInfo('GitHub API calls are cached with configurable TTL to minimize rate limit usage');
 }
 
 /**
@@ -76,12 +69,14 @@ export function initializeGitHubMonitoring(): void {
     checkRateLimits: checkGitHubRateLimits,
     logStats: logGitHubApiStats,
     clearCache: () => {
-      cache.clear();
+      persistentCache.clear();
       logInfo('Cache cleared successfully');
-    }
+    },
+    getCacheStats: () => persistentCache.getStats(),
+    getCacheConfig: () => persistentCache.getConfig()
   };
   
   // Warning when approaching rate limits
   logInfo('GitHub monitoring active: Will warn if rate limits get low');
-  logInfo('Debug utilities available: window.gitHubDebug.checkRateLimits(), window.gitHubDebug.logStats(), window.gitHubDebug.clearCache()');
+  logInfo('Debug utilities available: window.gitHubDebug.checkRateLimits(), window.gitHubDebug.logStats(), window.gitHubDebug.clearCache(), window.gitHubDebug.getCacheStats(), window.gitHubDebug.getCacheConfig()');
 }
