@@ -24,7 +24,7 @@ interface CacheConfig {
 export const DEFAULT_CACHE_CONFIG: CacheConfig = {
   exerciseTtlHours: 24,        // Exercises change rarely - cache for 24 hours
   reactionsTtlMinutes: 30,     // Reactions change more frequently - 30 minutes
-  rateLimitTtlMinutes: 1,      // Rate limits should be fresh - 1 minute
+  rateLimitTtlMinutes: 0.083,  // Rate limits should be fresh - 5 seconds (0.083 minutes)
   generalTtlMinutes: 60        // General content - 60 minutes
 };
 
