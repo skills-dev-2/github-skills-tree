@@ -181,15 +181,15 @@ export function SettingsPanel({ settings, onSettingsChange, onClose }: SettingsP
               
               <div>
                 <Label htmlFor="rate-limit-cache" className="text-xs text-foreground">
-                  Rate Limits (min)
+                  Rate Limits (sec)
                 </Label>
                 <Input
                   id="rate-limit-cache"
                   type="number"
                   min="1"
-                  max="60"
-                  value={settings.cacheConfig.rateLimitTtlMinutes}
-                  onChange={(e) => handleCacheConfigChange('rateLimitTtlMinutes', parseInt(e.target.value) || 1)}
+                  max="3600"
+                  value={Math.round(settings.cacheConfig.rateLimitTtlMinutes * 60)}
+                  onChange={(e) => handleCacheConfigChange('rateLimitTtlMinutes', (parseInt(e.target.value) || 5) / 60)}
                   className="h-8 text-xs"
                 />
               </div>

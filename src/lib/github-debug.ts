@@ -45,7 +45,7 @@ export function logGitHubApiStats(): void {
   }
   
   const config = persistentCache.getConfig();
-  logDebug(`Cache TTL: Exercises ${config.exerciseTtlHours}h, Reactions ${config.reactionsTtlMinutes}m, Rate limits ${config.rateLimitTtlMinutes}m, General ${config.generalTtlMinutes}m`);
+  logDebug(`Cache TTL: Exercises ${config.exerciseTtlHours}h, Reactions ${config.reactionsTtlMinutes}m, Rate limits ${Math.round(config.rateLimitTtlMinutes * 60)}s, General ${config.generalTtlMinutes}m`);
   
   logInfo('GitHub API calls are cached with configurable TTL to minimize rate limit usage');
 }
