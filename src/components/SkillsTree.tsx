@@ -47,6 +47,13 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   const [searchTerm, setSearchTerm] = useState('');
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  
+  // Settings button visibility state (persisted)
+  const [isSettingsButtonVisible, setIsSettingsButtonVisible] = useKV('settings-button-visible', false);
+  
+  // Title click tracking for settings toggle
+  const [titleClickCount, setTitleClickCount] = useState(0);
+  const titleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Store custom node positions in persistent storage
   const [customPositions, setCustomPositions] = useKV("node-positions", {});
@@ -235,6 +242,47 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   }, []);
 
   /**
+   * Handle rapid title clicks to toggle settings button visibility
+   */
+  const handleTitleClick = useCallback(() => {
+    const newCount = titleClickCount + 1;
+    setTitleClickCount(newCount);
+    
+    // Clear existing timeout
+    if (titleClickTimeoutRef.current) {
+      clearTimeout(titleClickTimeoutRef.current);
+    }
+    
+    // Check if we've reached 5 clicks
+    if (newCount >= 5) {
+      setIsSettingsButtonVisible((current) => !current);
+      setTitleClickCount(0);
+      logger.debug('Settings button visibility toggled via title clicks');
+    } else {
+      // Reset counter after 3 seconds
+      titleClickTimeoutRef.current = setTimeout(() => {
+        setTitleClickCount(0);
+      }, 3000);
+    }
+  }, [titleClickCount, setIsSettingsButtonVisible]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (titleClickTimeoutRef.current) {
+        clearTimeout(titleClickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Close settings panel when button becomes hidden
+  useEffect(() => {
+    if (!isSettingsButtonVisible && isSettingsVisible) {
+      setIsSettingsVisible(false);
+    }
+  }, [isSettingsButtonVisible, isSettingsVisible]);
+
+  /**
    * Calculates SVG dimensions based on node positions with responsive padding
    */
   const svgDimensions = useSvgDimensions(
@@ -262,8 +310,8 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
         />
       )}
 
-      {/* Settings Panel - positioned on the right */}
-      {isSettingsVisible && (
+      {/* Settings Panel - positioned on the right, only when button is visible */}
+      {isSettingsVisible && isSettingsButtonVisible && (
         <SettingsPanel
           settings={settings}
           onSettingsChange={handleSettingsChange}
@@ -275,9 +323,13 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
       <div className="absolute right-0 top-0 left-0 z-40 bg-background/95 backdrop-blur border-b border-border">
         <div className="px-3 sm:px-6 py-2 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Title Section - more compact */}
+            {/* Title Section - more compact and clickable */}
             <div className="min-w-0 flex-shrink-0">
-              <h1 className="text-base sm:text-xl font-bold text-foreground truncate">
+              <h1 
+                className="text-base sm:text-xl font-bold text-foreground truncate cursor-pointer select-none hover:text-primary transition-colors"
+                onClick={handleTitleClick}
+                title="Click 5 times quickly to toggle settings"
+              >
                 GitHub Skills Roadmap
               </h1>
             </div>
@@ -299,18 +351,20 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
                 <Funnel size={16} className="sm:hidden" />
                 <Funnel size={18} className="hidden sm:block" />
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsSettingsVisible(!isSettingsVisible)}
-                className={`w-8 h-8 sm:w-9 sm:h-9 p-0 rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0 ${
-                  isSettingsVisible ? 'bg-primary text-primary-foreground' : ''
-                }`}
-                title="Toggle Settings"
-              >
-                <Gear size={16} className="sm:hidden" />
-                <Gear size={18} className="hidden sm:block" />
-              </Button>
+              {isSettingsButtonVisible && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsSettingsVisible(!isSettingsVisible)}
+                  className={`w-8 h-8 sm:w-9 sm:h-9 p-0 rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0 ${
+                    isSettingsVisible ? 'bg-primary text-primary-foreground' : ''
+                  }`}
+                  title="Toggle Settings"
+                >
+                  <Gear size={16} className="sm:hidden" />
+                  <Gear size={18} className="hidden sm:block" />
+                </Button>
+              )}
               <div className="flex-1">
                 <SearchBar
                   searchTerm={searchTerm}
