@@ -249,14 +249,10 @@ export const GitHubAPI = {
   },
 
   /**
-   * Get current rate limit status (not cached - always fresh)
+   * Get current rate limit status for all resources (not cached - always fresh)
    */
-  async getRateLimit(): Promise<GitHubApiResponse<any>['rateLimitInfo']> {
+  async getRateLimit(): Promise<{ [resource: string]: GitHubApiResponse<any>['rateLimitInfo'] }> {
     const url = 'https://api.github.com/rate_limit';
-    
-    // For the rate limit endpoint specifically, we need to handle the response differently
-    // as the rate limit data is in the JSON body, not just headers
-    const cacheKey = createCacheKey('github-api', url, '{}');
     
     const response = await apiRequestQueue.enqueue(async () => {
       console.log(`🚦 [QUEUE] Processing GitHub API request: ${url}`);
@@ -274,26 +270,44 @@ export const GitHubAPI = {
 
       const data = await apiResponse.json();
       
-      // For the rate limit endpoint, use the core resource data from the response body
-      const coreRateLimit = data.resources?.core || data.rate;
+      // Parse all resource types from the response
+      const allLimits: { [resource: string]: GitHubApiResponse<any>['rateLimitInfo'] } = {};
       
-      if (!coreRateLimit) {
+      if (data.resources) {
+        // Process all resource types
+        Object.entries(data.resources).forEach(([resourceName, resourceData]: [string, any]) => {
+          allLimits[resourceName] = {
+            limit: resourceData.limit,
+            remaining: resourceData.remaining,
+            reset: new Date(resourceData.reset * 1000),
+            used: resourceData.used || (resourceData.limit - resourceData.remaining),
+            resource: resourceName
+          };
+        });
+      }
+      
+      // Also include the legacy "rate" object if it exists (typically contains core data)
+      if (data.rate) {
+        allLimits['rate'] = {
+          limit: data.rate.limit,
+          remaining: data.rate.remaining,
+          reset: new Date(data.rate.reset * 1000),
+          used: data.rate.used || (data.rate.limit - data.rate.remaining),
+          resource: data.rate.resource || 'core'
+        };
+      }
+      
+      if (Object.keys(allLimits).length === 0) {
         console.error('Unexpected rate limit response structure:', data);
         throw new Error('Unable to parse rate limit response');
       }
       
-      const rateLimitInfo = {
-        limit: coreRateLimit.limit,
-        remaining: coreRateLimit.remaining,
-        reset: new Date(coreRateLimit.reset * 1000),
-        used: coreRateLimit.used || (coreRateLimit.limit - coreRateLimit.remaining),
-        resource: coreRateLimit.resource || 'core'
-      };
+      // Log all rate limit information
+      Object.values(allLimits).forEach(rateLimitInfo => {
+        logRateLimitInfo(url, rateLimitInfo, false);
+      });
       
-      // Log rate limit information
-      logRateLimitInfo(url, rateLimitInfo, false);
-      
-      return rateLimitInfo;
+      return allLimits;
     });
     
     return response;
