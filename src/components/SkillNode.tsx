@@ -74,8 +74,9 @@ export function SkillNode({
   const nodeRadius = isHighlighted || isSelected ? nodeRadiusHighlighted : nodeRadiusDefault;
   const ringRadius = nodeRadius + UI_CONFIG.NODE_RING_OFFSET;
   
-  // Check if exercise is in development
+  // Check exercise status
   const isDevelopment = exercise.status === EXERCISE_STATUSES.DEVELOPMENT;
+  const isTentative = exercise.status === EXERCISE_STATUSES.TENTATIVE;
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (isDragModeEnabled) {
@@ -194,6 +195,7 @@ export function SkillNode({
           fill="none"
           stroke={path.color}
           strokeWidth="2"
+          strokeDasharray={isTentative ? "5,3" : "none"}
           opacity={isSelected ? 0.8 : 0.5}
           style={{
             transition: 'r 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -207,6 +209,7 @@ export function SkillNode({
         fill={isDevelopment ? UI_CONFIG.DEVELOPMENT_COLOR : "#21262d"}
         stroke={path.color}
         strokeWidth="2"
+        strokeDasharray={isTentative ? "5,3" : "none"}
         style={{
           filter: isHighlighted 
             ? `drop-shadow(0 0 12px ${path.color})` 
