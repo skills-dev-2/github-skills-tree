@@ -178,35 +178,27 @@ export function FilterBar({
     };
   }, [exercises, paths]);
 
-  // Create path color mapping for visual indicators
+  // Create path color mapping using actual path colors
   const pathColorMap = useMemo(() => {
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500', 
-      'bg-purple-500',
-      'bg-orange-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-pink-500',
-      'bg-indigo-500',
-      'bg-teal-500'
-    ];
-    
     const map: Record<string, string> = {};
-    filterOptions.paths.forEach((pathData, index) => {
-      map[pathData.slug] = colors[index % colors.length];
+    filterOptions.paths.forEach((pathData) => {
+      const path = paths.find(p => p.slug === pathData.slug);
+      map[pathData.slug] = path?.color || '#0969da'; // fallback to primary blue
     });
     
     return map;
-  }, [filterOptions.paths]);
+  }, [filterOptions.paths, paths]);
 
-  // Enhanced path item renderer with colored indicators
+  // Enhanced path item renderer with colored indicators using actual path colors
   const renderPathItem = (pathData: { slug: string; name: string }) => {
-    const colorClass = pathColorMap[pathData.slug] || 'bg-gray-500';
+    const pathColor = pathColorMap[pathData.slug] || '#0969da';
     
     return (
       <>
-        <div className={`w-3 h-3 rounded-full ${colorClass} flex-shrink-0`} />
+        <div 
+          className="w-3 h-3 rounded-full flex-shrink-0" 
+          style={{ backgroundColor: pathColor }}
+        />
         <span className="truncate">{pathData.name}</span>
       </>
     );
