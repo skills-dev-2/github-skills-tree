@@ -214,7 +214,7 @@ export function FilterBar({
       fixed bg-card/95 backdrop-blur border-border shadow-2xl rounded-xl z-50
       ${isMobile 
         ? 'inset-x-2 top-20 bottom-4 max-w-none overflow-y-auto' 
-        : 'top-20 left-4 w-80 bottom-4 overflow-hidden flex flex-col'
+        : 'top-20 right-4 w-80 bottom-4 overflow-hidden flex flex-col'
       }
     `}>
       {/* Header */}

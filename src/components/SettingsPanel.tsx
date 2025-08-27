@@ -30,6 +30,7 @@ interface SettingsPanelProps {
   settings: SettingsState;
   onSettingsChange: (settings: SettingsState) => void;
   onClose?: () => void;
+  isFiltersVisible?: boolean;
 }
 
 interface SettingsSectionProps {
@@ -70,7 +71,7 @@ function SettingsSection({ title, children, defaultExpanded = false }: SettingsS
 /**
  * Dedicated settings panel with console logging controls and other application settings
  */
-export function SettingsPanel({ settings, onSettingsChange, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onSettingsChange, onClose, isFiltersVisible = false }: SettingsPanelProps) {
   const { isMobile } = useResponsive();
 
   // Store settings in persistent storage
@@ -121,7 +122,9 @@ export function SettingsPanel({ settings, onSettingsChange, onClose }: SettingsP
       fixed bg-card/95 backdrop-blur border-border shadow-2xl rounded-xl z-50
       ${isMobile 
         ? 'inset-x-2 top-20 bottom-4 max-w-none overflow-y-auto' 
-        : 'top-20 right-4 w-80 bottom-4 overflow-hidden flex flex-col'
+        : isFiltersVisible
+          ? 'top-20 right-[21rem] w-80 bottom-4 overflow-hidden flex flex-col'  // 21rem = 336px (filter width + gap)
+          : 'top-20 right-4 w-80 bottom-4 overflow-hidden flex flex-col'
       }
     `}>
       {/* Header */}

@@ -322,6 +322,7 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
           settings={settings}
           onSettingsChange={handleSettingsChange}
           onClose={() => setIsSettingsVisible(false)}
+          isFiltersVisible={isFiltersVisible}
         />
       )}
 
