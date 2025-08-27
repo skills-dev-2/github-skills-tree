@@ -244,14 +244,6 @@ export function FilterBar({
         />
         
         <FilterSection
-          title="Status"
-          items={filterOptions.statuses}
-          selectedItems={filters.statuses}
-          onSelectionChange={(statuses) => onFiltersChange({ ...filters, statuses })}
-          renderItem={renderStatusItem}
-        />
-        
-        <FilterSection
           title="Product"
           items={filterOptions.products}
           selectedItems={filters.products}
@@ -263,6 +255,14 @@ export function FilterBar({
           items={filterOptions.difficulties}
           selectedItems={filters.difficulties}
           onSelectionChange={(difficulties) => onFiltersChange({ ...filters, difficulties })}
+        />
+        
+        <FilterSection
+          title="Status"
+          items={filterOptions.statuses}
+          selectedItems={filters.statuses}
+          onSelectionChange={(statuses) => onFiltersChange({ ...filters, statuses })}
+          renderItem={renderStatusItem}
         />
       </div>
     </Card>
