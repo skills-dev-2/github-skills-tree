@@ -2,22 +2,28 @@ import { useMemo } from 'react';
 import type { SkillTreeNode } from '../lib/types';
 
 /**
- * Custom hook for managing SVG dimensions based on node positions
- * Ensures all nodes are visible with appropriate padding
+ * Custom hook for managing SVG dimensions based on node positions and viewport constraints
+ * Ensures all nodes are visible with appropriate padding while fitting within the available space
  */
 export function useSvgDimensions(
   nodes: SkillTreeNode[],
   padding: number = 80,
   minWidth: number = 1400,
-  minHeight: number = 1200
+  minHeight: number = 1200,
+  viewportWidth?: number,
+  viewportHeight?: number,
+  headerHeight: number = 64
 ) {
   return useMemo(() => {
     const positions = nodes.map(node => node.position);
     
     if (positions.length === 0) {
+      const availableWidth = viewportWidth || minWidth;
+      const availableHeight = (viewportHeight || minHeight) - headerHeight;
+      
       return {
-        width: minWidth,
-        height: minHeight,
+        width: availableWidth,
+        height: availableHeight,
         offsetX: 0,
         offsetY: 0
       };
@@ -28,8 +34,17 @@ export function useSvgDimensions(
     const minY = Math.min(...positions.map(p => p.y));
     const maxY = Math.max(...positions.map(p => p.y));
     
-    const width = Math.max(maxX - Math.min(minX, 0) + padding * 2, minWidth);
-    const height = Math.max(maxY - Math.min(minY, 0) + padding * 2, minHeight);
+    // Calculate required dimensions based on content
+    const contentWidth = maxX - Math.min(minX, 0) + padding * 2;
+    const contentHeight = maxY - Math.min(minY, 0) + padding * 2;
+    
+    // Use viewport constraints if available, otherwise use minimum dimensions
+    const availableWidth = viewportWidth || minWidth;
+    const availableHeight = (viewportHeight || minHeight) - headerHeight;
+    
+    // Ensure we use the full available space
+    const width = Math.max(contentWidth, availableWidth);
+    const height = Math.max(contentHeight, availableHeight);
     
     return { 
       width, 
@@ -37,7 +52,7 @@ export function useSvgDimensions(
       offsetX: Math.min(minX, 0) - padding, 
       offsetY: Math.min(minY, 0) - padding 
     };
-  }, [nodes, padding, minWidth, minHeight]);
+  }, [nodes, padding, minWidth, minHeight, viewportWidth, viewportHeight, headerHeight]);
 }
 
 /**

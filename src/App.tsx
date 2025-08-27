@@ -41,9 +41,9 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-background">
-        {/* Main Skills Tree - now taking full height */}
-        <main className="relative h-screen">
+      <div className="h-screen max-h-screen overflow-hidden bg-background">
+        {/* Main Skills Tree - taking full viewport */}
+        <main className="relative h-full overflow-hidden">
           <SkillsTree 
             exercises={exercises} 
             paths={paths}

@@ -40,16 +40,17 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
         left: '1rem',
         right: '1rem',
         bottom: '1rem',
-        top: 'auto'
+        top: 'auto',
+        maxHeight: 'calc(100vh - 8rem)'
       };
     }
 
     const cardWidth = 320; // 80 * 4px (w-80)
     const cardHeight = 400; // Approximate height
     const padding = 20; // Minimum distance from viewport edge
-
-    // Get viewport dimensions (accounting for filter bar on desktop)
-    const viewportWidth = window.innerWidth - (window.innerWidth >= 768 ? 320 : 0);
+    
+    // Get viewport dimensions (no filter bar adjustment needed in no-scroll mode)
+    const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
     // Calculate position with pan offset and SVG offset applied
@@ -60,8 +61,8 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
     if (left + cardWidth > viewportWidth - padding) {
       left = position.x - svgOffset.x + panOffset.x - cardWidth - 60; // Show to the left instead
     }
-    if (left < padding + (window.innerWidth >= 768 ? 320 : 0)) { // Account for filter bar width
-      left = padding + (window.innerWidth >= 768 ? 320 : 0);
+    if (left < padding) {
+      left = padding;
     }
 
     // Adjust vertical position if it would overflow
@@ -76,6 +77,7 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
       position: 'fixed' as const,
       left: `${left}px`,
       top: `${top}px`,
+      maxHeight: `calc(100vh - ${top + padding}px)`
     };
   };
 
@@ -122,9 +124,9 @@ export function ExerciseDetails({ node, isSelected, onClose, position, panOffset
           border-border bg-card/95 backdrop-blur transition-all duration-200 ease-out
           ${isSelected ? 'z-50 scale-100 opacity-100' : 'z-40 pointer-events-none scale-95 opacity-90'}
           /* Mobile: full width bottom sheet */
-          w-full max-h-[70vh] overflow-y-auto
+          w-full overflow-y-auto
           /* Desktop: fixed width positioning */
-          md:w-80 md:max-h-none md:overflow-visible
+          md:w-80 md:overflow-y-auto
         `}
         style={{
           ...positionStyle,

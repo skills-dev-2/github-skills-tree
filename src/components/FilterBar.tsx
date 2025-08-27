@@ -213,12 +213,12 @@ export function FilterBar({
     <Card className={`
       fixed bg-card/95 backdrop-blur border-border shadow-2xl rounded-xl z-50
       ${isMobile 
-        ? 'inset-x-2 top-20 bottom-4 max-w-none' 
-        : 'top-20 left-4 w-80 max-h-[calc(100vh-6rem)]'
+        ? 'inset-x-2 top-20 bottom-4 max-w-none overflow-y-auto' 
+        : 'top-20 left-4 w-80 bottom-4 overflow-hidden flex flex-col'
       }
     `}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
         <h2 className="text-lg font-semibold text-foreground">Filters</h2>
         {onClose && (
           <Button
@@ -233,7 +233,7 @@ export function FilterBar({
       </div>
 
       {/* Filters Content */}
-      <div className="overflow-y-auto flex-1">
+      <div className="overflow-y-auto flex-1 min-h-0">
         <FilterSection
           title="Learning Path"
           items={filterOptions.paths}

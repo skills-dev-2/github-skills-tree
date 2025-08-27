@@ -16,6 +16,7 @@ import { DEFAULT_CACHE_CONFIG, persistentCache } from '../lib/persistent-cache';
 import { logger } from '../lib/console-logger';
 import { useSvgDimensions, useArrowMarkers } from '../hooks/use-svg-utils';
 import { useResponsive } from '../hooks/use-responsive';
+import { useViewport } from '../hooks/use-viewport';
 import { UI_CONFIG, FILTER_DEFAULTS } from '../constants';
 
 import type { SkillTreeNode } from '../lib/types';
@@ -29,6 +30,7 @@ interface SkillsTreeProps {
 
 export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: SkillsTreeProps) {
   const { isMobile } = useResponsive();
+  const viewport = useViewport();
   const [selectedNode, setSelectedNode] = useState<SkillTreeNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<SkillTreeNode | null>(null);
   // Initialize filters with default values
@@ -283,13 +285,17 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   }, [isSettingsButtonVisible, isSettingsVisible]);
 
   /**
-   * Calculates SVG dimensions based on node positions with responsive padding
+   * Calculates SVG dimensions based on node positions with responsive padding and viewport constraints
    */
+  const headerHeight = isMobile ? UI_CONFIG.TOTAL_TOP_PADDING_MOBILE : UI_CONFIG.TOTAL_TOP_PADDING;
   const svgDimensions = useSvgDimensions(
     nodesWithVisibility, 
     isMobile ? UI_CONFIG.SVG_PADDING_MOBILE : UI_CONFIG.SVG_PADDING,
     isMobile ? UI_CONFIG.MIN_SVG_WIDTH_MOBILE : UI_CONFIG.MIN_SVG_WIDTH,
-    isMobile ? UI_CONFIG.MIN_SVG_HEIGHT_MOBILE : UI_CONFIG.MIN_SVG_HEIGHT
+    isMobile ? UI_CONFIG.MIN_SVG_HEIGHT_MOBILE : UI_CONFIG.MIN_SVG_HEIGHT,
+    viewport.width,
+    viewport.height,
+    headerHeight
   );
 
   /**
@@ -298,7 +304,7 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
   const uniqueMarkers = useArrowMarkers(nodesWithVisibility);
 
   return (
-    <div className="relative w-full h-screen overflow-auto bg-background">
+    <div className="relative w-full h-full overflow-hidden bg-background">
       {/* Filter Bar - responsive positioning */}
       {isFiltersVisible && (
         <FilterBar
@@ -380,10 +386,10 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
       {/* Main content area with top margin for combined header */}
       <div 
         ref={containerRef}
-        className="h-full"
+        className="h-full w-full overflow-hidden"
         style={{ 
           cursor: settings.isDragModeEnabled ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-          paddingTop: `${isMobile ? UI_CONFIG.TOTAL_TOP_PADDING_MOBILE : UI_CONFIG.TOTAL_TOP_PADDING}px`
+          paddingTop: `${headerHeight}px`
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -394,10 +400,10 @@ export function SkillsTree({ exercises, paths, exerciseCount, pathCount }: Skill
         <svg
           width={svgDimensions.width}
           height={svgDimensions.height}
-          className="absolute top-0 left-0"
+          className="block"
           style={{ 
-            minWidth: '100%', 
-            minHeight: '100vh',
+            maxWidth: '100%',
+            maxHeight: `calc(100vh - ${headerHeight}px)`,
             transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
             transition: isDragging ? 'none' : 'transform 0.1s ease'
           }}
