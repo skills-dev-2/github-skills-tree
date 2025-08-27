@@ -6,15 +6,24 @@ export function createSkillTreeData(exercises: Exercise[], paths: Path[]): Skill
   
   // First pass: create nodes without calculated positions
   const nodes: SkillTreeNode[] = exercises.map((exercise, index) => {
-    const pathSlug = exercise.pathSlug || 'fundamentals';
+    const pathSlug = exercise.pathSlug;
     const dependencies = exercise.dependencies || [];
     
-    const path = pathMap.get(pathSlug) || paths[0] || { 
-      slug: 'fundamentals', 
-      name: 'Fundamentals', 
-      description: 'Basic skills',
-      color: '#0969da'
-    };
+    // Find the path for this exercise, or use the first available path as fallback
+    let path: Path;
+    if (pathSlug && pathMap.has(pathSlug)) {
+      path = pathMap.get(pathSlug)!;
+    } else if (paths.length > 0) {
+      path = paths[0];
+    } else {
+      // Create a default path only if no paths are available at all
+      path = { 
+        slug: 'default', 
+        name: 'Default', 
+        description: 'Default learning path',
+        color: '#0969da'
+      };
+    }
     
     return {
       exercise,
